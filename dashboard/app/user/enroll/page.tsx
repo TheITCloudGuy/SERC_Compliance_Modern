@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Shield, 
   Lock, 
@@ -214,7 +214,29 @@ function PrivacyStep() {
   );
 }
 
-function EnrollStep() {
+function EnrollStep({ onDeviceFound }: { onDeviceFound?: () => void }) {
+  const [status, setStatus] = useState<'waiting' | 'found'>('waiting');
+
+  useEffect(() => {
+    const checkDevice = async () => {
+      try {
+        const res = await fetch("/api/telemetry");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.length > 0) {
+            setStatus('found');
+            if (onDeviceFound) onDeviceFound();
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    const interval = setInterval(checkDevice, 2000);
+    return () => clearInterval(interval);
+  }, [onDeviceFound]);
+
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
@@ -230,13 +252,20 @@ function EnrollStep() {
         <p className="text-sm text-slate-500 mb-4">Click below to verify your status and access the portal.</p>
         
         <div className="flex justify-center">
-           <div className="animate-pulse flex items-center gap-2 text-blue-600 text-sm font-medium bg-blue-50 px-4 py-2 rounded-full">
-             <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-              </span>
-             Waiting for device signal...
-           </div>
+           {status === 'waiting' ? (
+             <div className="animate-pulse flex items-center gap-2 text-blue-600 text-sm font-medium bg-blue-50 px-4 py-2 rounded-full">
+               <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                </span>
+               Waiting for device signal...
+             </div>
+           ) : (
+             <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-4 py-2 rounded-full">
+               <Check className="w-4 h-4" />
+               Device Connected!
+             </div>
+           )}
         </div>
       </div>
     </div>

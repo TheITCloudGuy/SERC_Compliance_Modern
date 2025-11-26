@@ -4,7 +4,7 @@ import { ensureTableExists } from "@/lib/azure";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { hostname, serialNumber, osBuild, checks } = body;
+    const { hostname, serialNumber, osBuild, checks, userEmail } = body;
 
     if (!hostname || !serialNumber || !checks) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       rowKey: serialNumber,
       Hostname: hostname,
       OSBuild: osBuild || "Unknown",
+      UserEmail: userEmail || "Unknown",
       LastSeen: new Date(),
       ComplianceStatus: JSON.stringify(checks),
       IsCompliant: isCompliant,
