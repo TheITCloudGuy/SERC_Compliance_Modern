@@ -38,11 +38,20 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get("email");
+
     const client = await ensureTableExists();
     const entities = [];
-    const iterator = client.listEntities();
+    
+    // Filter by UserEmail if provided
+    const queryOptions = email 
+      ? { filter: `UserEmail eq '${email}'` } 
+      : undefined;
+
+    const iterator = client.listEntities({ queryOptions });
 
     for await (const entity of iterator) {
       entities.push(entity);

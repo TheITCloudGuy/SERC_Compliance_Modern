@@ -17,9 +17,16 @@ export default function UserPortal() {
   const [device, setDevice] = useState<Device | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // TODO: Replace with actual user email from Auth Provider
+  const userEmail = undefined; 
+
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/telemetry");
+      const url = userEmail 
+        ? `/api/telemetry?email=${encodeURIComponent(userEmail)}`
+        : "/api/telemetry";
+
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         // For PoC, just pick the first device found, or simulate "My Device"

@@ -16,6 +16,11 @@ import Link from "next/link";
 
 export default function EnrollmentPage() {
   const [step, setStep] = useState(1);
+  
+  // TODO: Replace with actual user email from your Auth Provider (e.g., NextAuth session)
+  // const { data: session } = useSession();
+  // const userEmail = session?.user?.email;
+  const userEmail = undefined; // Currently undefined to show all devices for testing
 
   const totalSteps = 4;
 
@@ -58,7 +63,7 @@ export default function EnrollmentPage() {
             {step === 1 && <WelcomeStep />}
             {step === 2 && <WhyStep />}
             {step === 3 && <PrivacyStep />}
-            {step === 4 && <EnrollStep />}
+            {step === 4 && <EnrollStep userEmail={userEmail} />}
           </div>
 
           {/* Navigation Buttons */}
@@ -214,13 +219,18 @@ function PrivacyStep() {
   );
 }
 
-function EnrollStep({ onDeviceFound }: { onDeviceFound?: () => void }) {
+function EnrollStep({ onDeviceFound, userEmail }: { onDeviceFound?: () => void, userEmail?: string }) {
   const [status, setStatus] = useState<'waiting' | 'found'>('waiting');
 
   useEffect(() => {
     const checkDevice = async () => {
       try {
-        const res = await fetch("/api/telemetry");
+        // If we have a userEmail, filter by it. Otherwise, fetch all (for dev/testing).
+        const url = userEmail 
+          ? `/api/telemetry?email=${encodeURIComponent(userEmail)}`
+          : "/api/telemetry";
+          
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           if (data.length > 0) {
@@ -235,7 +245,7 @@ function EnrollStep({ onDeviceFound }: { onDeviceFound?: () => void }) {
 
     const interval = setInterval(checkDevice, 2000);
     return () => clearInterval(interval);
-  }, [onDeviceFound]);
+  }, [onDeviceFound, userEmail]);
 
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
