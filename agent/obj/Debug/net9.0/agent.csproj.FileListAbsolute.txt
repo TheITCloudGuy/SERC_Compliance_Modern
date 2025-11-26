@@ -1,0 +1,14 @@
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\bin\Debug\net9.0\agent.exe
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\bin\Debug\net9.0\agent.deps.json
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\bin\Debug\net9.0\agent.runtimeconfig.json
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\bin\Debug\net9.0\agent.dll
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\bin\Debug\net9.0\agent.pdb
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.AssemblyInfoInputs.cache
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.AssemblyInfo.cs
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.csproj.CoreCompileInputs.cache
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.dll
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\refint\agent.dll
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.pdb
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\agent.genruntimeconfig.cache
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\obj\Debug\net9.0\ref\agent.dll
