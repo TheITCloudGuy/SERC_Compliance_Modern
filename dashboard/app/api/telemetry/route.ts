@@ -4,7 +4,7 @@ import { ensureTableExists } from "@/lib/azure";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { hostname, serialNumber, osBuild, checks, userEmail } = body;
+    const { hostname, serialNumber, osBuild, checks, userEmail, userName, azureAdDeviceId, joinType } = body;
 
     if (!hostname || !serialNumber || !checks) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -17,20 +17,43 @@ export async function POST(request: Request) {
       checks.tpm && 
       checks.antivirus;
 
-    const entity = {
+    const entity: any = {
       partitionKey: "SERC",
       rowKey: serialNumber,
       Hostname: hostname,
       OSBuild: osBuild || "Unknown",
-      UserEmail: userEmail || "Unknown",
       LastSeen: new Date(),
       ComplianceStatus: JSON.stringify(checks),
       IsCompliant: isCompliant,
       IsEnrolled: true,
+      // Explicitly requested fields
+      FullName: userName,
+      Username: userEmail,
+      Bitlocker: checks.bitlocker,
+      Firewall: checks.firewall,
+      TPM: checks.tpm,
+      SecureBoot: checks.secureBoot,
+      Antivirus: checks.antivirus
     };
 
+    if (userEmail && userEmail !== "Unknown") {
+      entity.UserEmail = userEmail;
+    }
+
+    if (userName && userName !== "Unknown") {
+      entity.UserName = userName;
+    }
+
+    if (azureAdDeviceId) {
+      entity.AzureAdDeviceId = azureAdDeviceId;
+    }
+
+    if (joinType) {
+      entity.JoinType = joinType;
+    }
+
     const client = await ensureTableExists();
-    await client.upsertEntity(entity, "Replace");
+    await client.upsertEntity(entity, "Merge");
 
     return NextResponse.json({ success: true, isCompliant });
   } catch (error) {

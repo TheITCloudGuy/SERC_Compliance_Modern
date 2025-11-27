@@ -29,6 +29,17 @@ interface Device {
   LastSeen: string;
   ComplianceStatus: string;
   IsCompliant: boolean;
+  UserName?: string;
+  UserEmail?: string;
+  AzureAdDeviceId?: string;
+  JoinType?: string;
+  FullName?: string;
+  Username?: string;
+  Bitlocker?: boolean;
+  Firewall?: boolean;
+  TPM?: boolean;
+  SecureBoot?: boolean;
+  Antivirus?: boolean;
 }
 
 export default function Dashboard() {
@@ -218,6 +229,7 @@ export default function Dashboard() {
                     <input type="checkbox" className="rounded border-slate-300" />
                   </th>
                   <th className="px-6 py-3 font-medium">Hostname</th>
+                  <th className="px-6 py-3 font-medium">User</th>
                   <th className="px-6 py-3 font-medium">Serial Number</th>
                   <th className="px-6 py-3 font-medium">Last Seen</th>
                   <th className="px-6 py-3 font-medium">Compliance</th>
@@ -253,6 +265,12 @@ export default function Dashboard() {
                               <Monitor className="w-4 h-4" />
                             </div>
                             <span className="font-medium text-slate-900">{device.Hostname}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-slate-900 font-medium text-sm">{device.UserName || "Unknown"}</span>
+                            <span className="text-slate-500 text-xs">{device.UserEmail || "Unknown"}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-600 font-mono text-xs">
@@ -368,6 +386,13 @@ export default function Dashboard() {
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Device Information</h3>
                 <dl className="grid grid-cols-1 gap-y-4 text-sm">
                   <div className="flex justify-between py-3 border-b border-slate-100">
+                    <dt className="text-slate-500">Assigned User</dt>
+                    <dd className="text-slate-900 font-medium text-right">
+                      <div>{selectedDevice.UserName || "Unknown"}</div>
+                      <div className="text-xs text-slate-500">{selectedDevice.UserEmail || "Unknown"}</div>
+                    </dd>
+                  </div>
+                  <div className="flex justify-between py-3 border-b border-slate-100">
                     <dt className="text-slate-500">Last Seen</dt>
                     <dd className="text-slate-900 font-medium">{new Date(selectedDevice.LastSeen).toLocaleString()}</dd>
                   </div>
@@ -379,9 +404,25 @@ export default function Dashboard() {
                     <dt className="text-slate-500">Operating System</dt>
                     <dd className="text-slate-900 font-medium">Windows {selectedDevice.OSBuild || "11 Enterprise"}</dd>
                   </div>
+
+                  {/* New Azure AD Status Section */}
+                  <div className="flex justify-between py-3 border-b border-slate-100">
+                    <dt className="text-slate-500">Azure AD Status</dt>
+                    <dd className="text-slate-900 font-medium text-right">
+                      <div className={selectedDevice.JoinType ? "text-green-700" : "text-slate-500"}>
+                        {selectedDevice.JoinType || "Not Registered"}
+                      </div>
+                      {selectedDevice.AzureAdDeviceId && (
+                        <div className="text-xs text-slate-500 font-mono">{selectedDevice.AzureAdDeviceId}</div>
+                      )}
+                    </dd>
+                  </div>
+
                   <div className="flex justify-between py-3 border-b border-slate-100">
                     <dt className="text-slate-500">Managed By</dt>
-                    <dd className="text-slate-900 font-medium">Entra ID (Personal)</dd>
+                    <dd className="text-slate-900 font-medium">
+                      {selectedDevice.JoinType ? "Entra ID (Corporate)" : "Local / Workgroup"}
+                    </dd>
                   </div>
                 </dl>
               </div>

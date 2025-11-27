@@ -45,6 +45,8 @@ export async function POST(request: Request) {
       rowKey: targetDevice.rowKey as string,
       UserEmail: session.user.email,
       UserName: session.user.name,
+      FullName: session.user.name,
+      Username: session.user.email,
       IsEnrolled: true,
       EnrollmentCode: "" // Clear the code
     };

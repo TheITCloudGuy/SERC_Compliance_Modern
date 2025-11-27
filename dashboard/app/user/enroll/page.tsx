@@ -10,14 +10,15 @@ import {
   ChevronRight, 
   Download, 
   ArrowRight,
-  Laptop
+  Laptop,
+  User
 } from "lucide-react";
 import Link from "next/link";
 
 export default function EnrollmentPage() {
   const [step, setStep] = useState(1);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, totalSteps));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
@@ -44,7 +45,8 @@ export default function EnrollmentPage() {
               <StepIndicator current={step} step={1} label="Welcome" />
               <StepIndicator current={step} step={2} label="Why Enroll?" />
               <StepIndicator current={step} step={3} label="Privacy" />
-              <StepIndicator current={step} step={4} label="Connect" />
+              <StepIndicator current={step} step={4} label="Connect Account" />
+              <StepIndicator current={step} step={5} label="Link Device" />
             </div>
           </div>
           <div className="text-xs text-slate-400 mt-8">
@@ -58,7 +60,8 @@ export default function EnrollmentPage() {
             {step === 1 && <WelcomeStep />}
             {step === 2 && <WhyStep />}
             {step === 3 && <PrivacyStep />}
-            {step === 4 && <EnrollStep />}
+            {step === 4 && <ConnectAccountStep />}
+            {step === 5 && <EnrollStep />}
           </div>
 
           {/* Navigation Buttons */}
@@ -208,6 +211,70 @@ function PrivacyStep() {
             <li>• Location / GPS</li>
             <li>• Passwords</li>
           </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConnectAccountStep() {
+  return (
+    <div className="animate-in fade-in slide-in-from-right-4 duration-500 h-full overflow-y-auto pr-2">
+      <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
+        <User className="w-8 h-8" />
+      </div>
+      <h2 className="text-2xl font-bold text-slate-900 mb-4">Connect Work Account</h2>
+      <p className="text-slate-600 text-sm mb-6">
+        To verify your identity, you need to add your SERC work account to Windows. Follow these steps:
+      </p>
+      
+      <div className="space-y-8">
+        <div className="space-y-3">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+            <span className="bg-slate-200 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+            Open Settings
+          </h3>
+          <p className="text-xs text-slate-500 ml-8">Open the Start menu and select <strong>Settings</strong>.</p>
+          <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
+            {/* Replace with actual image: win11-settings.png */}
+            <img src="https://placehold.co/600x300/e2e8f0/64748b?text=Windows+11+Settings" alt="Windows 11 Settings" className="w-full h-auto" />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+            <span className="bg-slate-200 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+            Go to Accounts
+          </h3>
+          <p className="text-xs text-slate-500 ml-8">Select <strong>Accounts</strong> from the left sidebar, then click <strong>Access work or school</strong>.</p>
+          <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
+            {/* Replace with actual image: win11-accounts.png */}
+            <img src="https://placehold.co/600x300/e2e8f0/64748b?text=Accounts+%3E+Access+work+or+school" alt="Access work or school" className="w-full h-auto" />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+            <span className="bg-slate-200 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+            Connect Account
+          </h3>
+          <p className="text-xs text-slate-500 ml-8">Click the <strong>Connect</strong> button.</p>
+          <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
+            {/* Replace with actual image: win11-connect.png */}
+            <img src="https://placehold.co/600x150/e2e8f0/64748b?text=Connect+Button" alt="Connect Button" className="w-full h-auto" />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+            <span className="bg-slate-200 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+            Sign In
+          </h3>
+          <p className="text-xs text-slate-500 ml-8">Enter your SERC email address and password when prompted.</p>
+          <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
+            {/* Replace with actual image: win11-signin.png */}
+            <img src="https://placehold.co/600x400/e2e8f0/64748b?text=Sign+In+Prompt" alt="Sign In Prompt" className="w-full h-auto" />
+          </div>
         </div>
       </div>
     </div>

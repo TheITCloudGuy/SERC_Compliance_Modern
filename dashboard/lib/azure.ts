@@ -1,7 +1,7 @@
 import { TableClient } from "@azure/data-tables";
 
 const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING || "UseDevelopmentStorage=true";
-const tableName = "DeviceCompliance";
+const tableName = process.env.AZURE_TABLE_NAME || "DeviceCompliance";
 
 export const getTableClient = () => {
   return TableClient.fromConnectionString(connectionString, tableName);

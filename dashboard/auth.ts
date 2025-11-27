@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  debug: true, // Enable debugging to see logs in Vercel
   providers: [
     MicrosoftEntraID({
       clientId: process.env.AUTH_AZURE_AD_ID,
