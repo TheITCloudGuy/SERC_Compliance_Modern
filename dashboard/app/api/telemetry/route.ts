@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       LastSeen: new Date(),
       ComplianceStatus: JSON.stringify(checks),
       IsCompliant: isCompliant,
+      IsEnrolled: true,
     };
 
     const client = await ensureTableExists();
@@ -46,10 +47,13 @@ export async function GET(request: Request) {
     const client = await ensureTableExists();
     const entities = [];
     
-    // Filter by UserEmail if provided
-    const queryOptions = email 
-      ? { filter: `UserEmail eq '${email}'` } 
-      : undefined;
+    // Filter by UserEmail if provided, and ensure only enrolled devices are returned
+    let filter = "IsEnrolled eq true";
+    if (email) {
+      filter = `UserEmail eq '${email}' and IsEnrolled eq true`;
+    }
+
+    const queryOptions = { filter };
 
     const iterator = client.listEntities({ queryOptions });
 

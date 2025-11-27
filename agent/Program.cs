@@ -183,8 +183,9 @@ bool GetBitLockerStatus()
             if (status == 1) return true; // 1 = On
         }
     }
-    catch 
+    catch (Exception ex)
     {
+        Console.WriteLine($"BitLocker Check Error: {ex.Message}");
         // Fallback or Home edition handling could go here (manage-bde parsing), 
         // but for modern agent we prefer WMI. 
     }
@@ -206,7 +207,10 @@ bool GetTpmStatus()
             return enabled && activated;
         }
     }
-    catch { }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"TPM Check Error: {ex.Message}");
+    }
     return false;
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldCheck, ShieldAlert, RefreshCw, CheckCircle2, XCircle, Monitor } from "lucide-react";
+import Link from "next/link";
+import { ShieldCheck, ShieldAlert, RefreshCw, CheckCircle2, XCircle, Monitor, ArrowLeft } from "lucide-react";
 
 interface Device {
   partitionKey: string;
@@ -55,11 +56,15 @@ export default function UserPortal() {
 
   if (!device) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <div className="text-center">
           <Monitor className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-slate-900">No Device Found</h2>
-          <p className="text-slate-500 mt-2">Run the agent to register your device.</p>
+          <p className="text-slate-500 mt-2 mb-6">Run the agent to register your device.</p>
+          <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Link>
         </div>
       </div>
     );
@@ -70,6 +75,11 @@ export default function UserPortal() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
+        <Link href="/" className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Home
+        </Link>
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900">My Device Status</h1>

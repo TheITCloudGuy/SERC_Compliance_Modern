@@ -39,23 +39,6 @@ export default function Dashboard() {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const selectedDeviceIdRef = useRef<string | null>(null);
 
-  if (status === "loading") {
-    return <div className="flex items-center justify-center h-screen text-slate-600">Loading...</div>;
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-slate-50">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md border border-slate-200 max-w-md">
-          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-800 mb-2">Access Denied</h1>
-          <p className="text-slate-600">You do not have permission to view this page.</p>
-          <p className="text-slate-500 text-sm mt-2">Please contact your administrator if you believe this is an error.</p>
-        </div>
-      </div>
-    );
-  }
-
   // Keep ref in sync with state
   useEffect(() => {
     selectedDeviceIdRef.current = selectedDevice?.rowKey || null;
@@ -103,10 +86,29 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (status === "loading" || !session?.user?.isAdmin) return;
+
     fetchData();
     const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
-  }, []); // Removed selectedDevice dependency to prevent interval reset loops
+  }, [status, session]); // Removed selectedDevice dependency to prevent interval reset loops
+
+  if (status === "loading") {
+    return <div className="flex items-center justify-center h-screen text-slate-600">Loading...</div>;
+  }
+
+  if (!session?.user?.isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-md border border-slate-200 max-w-md">
+          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">Access Denied</h1>
+          <p className="text-slate-600">You do not have permission to view this page.</p>
+          <p className="text-slate-500 text-sm mt-2">Please contact your administrator if you believe this is an error.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate stats
   const totalDevices = devices.length;
