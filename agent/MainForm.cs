@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Windows.Security.Authentication.Web.Core;
 using Windows.Security.Credentials;
+using System.IO;
+using System.Linq;
 
 namespace Agent;
 
@@ -438,11 +440,21 @@ public class MainForm : Form
     {
         try
         {
+            // Handle x86/x64 process architecture correctly
+            string dsregPath = Environment.Is64BitProcess
+                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "dsregcmd.exe")
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "sysnative", "dsregcmd.exe");
+
+            if (!File.Exists(dsregPath))
+            {
+                 dsregPath = "dsregcmd"; // Fallback
+            }
+
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "dsregcmd",
+                    FileName = dsregPath,
                     Arguments = "/status",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
@@ -468,10 +480,19 @@ public class MainForm : Form
             var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var line in lines)
             {
-                if (line.Trim().StartsWith("DeviceId :"))
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("DeviceId :"))
                 {
-                    deviceId = line.Split(':')[1].Trim();
-                    break;
+                    deviceId = trimmed.Split(':')[1].Trim();
+                }
+                else if (trimmed.StartsWith("WorkplaceDeviceId :"))
+                {
+                    // Prefer WorkplaceDeviceId if we are workplace joined or if DeviceId is missing
+                    var wpId = trimmed.Split(':')[1].Trim();
+                    if (!string.IsNullOrEmpty(wpId) && (joinType == "Workplace Joined" || string.IsNullOrEmpty(deviceId)))
+                    {
+                        deviceId = wpId;
+                    }
                 }
             }
 

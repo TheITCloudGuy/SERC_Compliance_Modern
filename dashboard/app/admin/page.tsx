@@ -230,7 +230,7 @@ export default function Dashboard() {
                   </th>
                   <th className="px-6 py-3 font-medium">Hostname</th>
                   <th className="px-6 py-3 font-medium">User</th>
-                  <th className="px-6 py-3 font-medium">Serial Number</th>
+                  <th className="px-6 py-3 font-medium">Device IDs</th>
                   <th className="px-6 py-3 font-medium">Last Seen</th>
                   <th className="px-6 py-3 font-medium">Compliance</th>
                   <th className="px-6 py-3 font-medium">Security Checks</th>
@@ -274,12 +274,11 @@ export default function Dashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-600 font-mono text-xs">
-                          <div>{device.rowKey}</div>
-                          {device.AzureAdDeviceId && (
-                            <div className="text-[10px] text-slate-400 mt-1" title="Azure AD Device ID">
-                              {device.AzureAdDeviceId}
-                            </div>
-                          )}
+                          <div className="font-medium text-slate-700" title="Serial Number">{device.rowKey}</div>
+                          <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1" title="Azure AD Device ID">
+                            <span className="font-bold text-blue-600 text-[10px]">AZURE</span>
+                            <span>{device.AzureAdDeviceId || "Not Joined"}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {new Date(device.LastSeen).toLocaleString()}

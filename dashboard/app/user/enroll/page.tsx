@@ -236,8 +236,7 @@ function ConnectAccountStep() {
           </h3>
           <p className="text-xs text-slate-500 ml-8">Open the Start menu and select <strong>Settings</strong>.</p>
           <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
-            {/* Replace with actual image: win11-settings.png */}
-            <img src="https://placehold.co/600x300/e2e8f0/64748b?text=Windows+11+Settings" alt="Windows 11 Settings" className="w-full h-auto" />
+            <img src="/enrollment/win11-settings.png" alt="Windows 11 Settings" className="w-full h-auto" />
           </div>
         </div>
 
@@ -248,8 +247,7 @@ function ConnectAccountStep() {
           </h3>
           <p className="text-xs text-slate-500 ml-8">Select <strong>Accounts</strong> from the left sidebar, then click <strong>Access work or school</strong>.</p>
           <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
-            {/* Replace with actual image: win11-accounts.png */}
-            <img src="https://placehold.co/600x300/e2e8f0/64748b?text=Accounts+%3E+Access+work+or+school" alt="Access work or school" className="w-full h-auto" />
+            <img src="/enrollment/win11-accounts.png" alt="Access work or school" className="w-full h-auto" />
           </div>
         </div>
 
@@ -260,8 +258,7 @@ function ConnectAccountStep() {
           </h3>
           <p className="text-xs text-slate-500 ml-8">Click the <strong>Connect</strong> button.</p>
           <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
-            {/* Replace with actual image: win11-connect.png */}
-            <img src="https://placehold.co/600x150/e2e8f0/64748b?text=Connect+Button" alt="Connect Button" className="w-full h-auto" />
+            <img src="/enrollment/win11-connect.png" alt="Connect Button" className="w-full h-auto" />
           </div>
         </div>
 
@@ -272,8 +269,7 @@ function ConnectAccountStep() {
           </h3>
           <p className="text-xs text-slate-500 ml-8">Enter your SERC email address and password when prompted.</p>
           <div className="ml-8 border rounded-lg overflow-hidden shadow-sm">
-            {/* Replace with actual image: win11-signin.png */}
-            <img src="https://placehold.co/600x400/e2e8f0/64748b?text=Sign+In+Prompt" alt="Sign In Prompt" className="w-full h-auto" />
+            <img src="/enrollment/win11-signin.png" alt="Sign In Prompt" className="w-full h-auto" />
           </div>
         </div>
       </div>
