@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, LayoutDashboard, User } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, User, PlusCircle } from "lucide-react";
 import { auth } from "@/auth";
 import { SignIn, SignOut } from "@/components/auth-components";
 
@@ -26,7 +26,7 @@ export default async function Home() {
               <SignOut />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {/* Admin Portal Card */}
               {session.user?.isAdmin && (
                 <Link 
@@ -40,6 +40,18 @@ export default async function Home() {
                   <p className="text-slate-500">View compliance status for all devices, manage inventory, and monitor security threats.</p>
                 </Link>
               )}
+
+              {/* Add Device Card */}
+              <Link 
+                href="/user/enroll"
+                className="group relative bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-purple-500 transition-all text-left"
+              >
+                <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
+                  <PlusCircle className="w-6 h-6 text-purple-600 group-hover:text-white" />
+                </div>
+                <h2 className="text-xl font-semibold text-slate-900 mb-2">Add Device</h2>
+                <p className="text-slate-500">Register a new device to access SERC resources securely.</p>
+              </Link>
 
               {/* User Portal Card */}
               <Link 

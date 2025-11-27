@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dgSpecHash": "kmcPptId0AM=",
-  "success": false,
+  "success": true,
   "projectFilePath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\agent\\agent.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\azure.core\\1.40.0\\azure.core.1.40.0.nupkg.sha512",
@@ -12,6 +12,7 @@
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identity.client\\4.61.3\\microsoft.identity.client.4.61.3.nupkg.sha512",
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identity.client.extensions.msal\\4.61.3\\microsoft.identity.client.extensions.msal.4.61.3.nupkg.sha512",
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identitymodel.abstractions\\7.6.0\\microsoft.identitymodel.abstractions.7.6.0.nupkg.sha512",
+    "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identitymodel.jsonwebtokens\\7.6.0\\microsoft.identitymodel.jsonwebtokens.7.6.0.nupkg.sha512",
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identitymodel.logging\\7.6.0\\microsoft.identitymodel.logging.7.6.0.nupkg.sha512",
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identitymodel.protocols\\7.6.0\\microsoft.identitymodel.protocols.7.6.0.nupkg.sha512",
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\microsoft.identitymodel.protocols.openidconnect\\7.6.0\\microsoft.identitymodel.protocols.openidconnect.7.6.0.nupkg.sha512",
@@ -40,17 +41,5 @@
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\system.text.json\\4.7.2\\system.text.json.4.7.2.nupkg.sha512",
     "C:\\Users\\LAB-MAIN\\.nuget\\packages\\system.threading.tasks.extensions\\4.5.4\\system.threading.tasks.extensions.4.5.4.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1100",
-      "level": "Error",
-      "message": "Unable to resolve 'Microsoft.IdentityModel.JsonWebTokens (>= 7.6.0)' for 'net9.0'. PackageSourceMapping is enabled, the following source(s) were not considered: nuget.org.",
-      "projectPath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\agent\\agent.csproj",
-      "filePath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\agent\\agent.csproj",
-      "libraryId": "Microsoft.IdentityModel.JsonWebTokens",
-      "targetGraphs": [
-        "net9.0"
-      ]
-    }
-  ]
+  "logs": []
 }

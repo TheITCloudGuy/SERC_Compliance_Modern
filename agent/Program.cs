@@ -1,7 +1,4 @@
-﻿using Azure.Identity;
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
-using System.Management;
+﻿using System.Management;
 using System.Net.Http.Json;
 using System.Net.NetworkInformation;
 using System.Runtime.Versioning;
@@ -16,60 +13,85 @@ if (!OperatingSystem.IsWindows())
 
 var httpClient = new HttpClient();
 var dashboardUrl = "http://localhost:3000/api/telemetry";
-
-// Configuration Constants
-const string TenantId = "54efe58d-72b7-45af-9a01-30ee5f377a71";
-const string ClientId = "78177e92-40a8-446f-9f84-f2f801407034";
-const string AllowedGroupId = "db92ee1b-c04f-4e35-9c7c-33ca78ec6d65";
+var enrollUrl = "http://localhost:3000/api/enroll/poll";
 
 Console.WriteLine("Starting SERC Compliance Agent (Modern)...");
 
-// 1. Authentication & User Info
-Console.WriteLine("Authenticating...");
-var credential = new InteractiveBrowserCredential(new InteractiveBrowserCredentialOptions
-{
-    TenantId = TenantId,
-    ClientId = ClientId,
-    RedirectUri = new Uri("http://localhost"),
-    TokenCachePersistenceOptions = new TokenCachePersistenceOptions { Name = "SERC_Compliance_Modern" }
-});
+// 1. Enrollment Check
+string enrollmentCode = "";
+bool isEnrolled = false;
+string userEmail = "";
+string userName = "";
 
-var graphClient = new GraphServiceClient(credential, new[] { "User.Read", "GroupMember.Read.All" });
-
-User? me = null;
-try
-{
-    me = await graphClient.Me.GetAsync();
-    Console.WriteLine($"Signed in as: {me?.DisplayName} ({me?.UserPrincipalName})");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"Authentication failed: {ex.Message}");
-    // In a real app, we might want to loop/retry or exit.
-    // For now, we'll continue but user info will be missing.
-}
-
-// 2. Check Group Membership
-bool isAllowed = false;
-if (me != null)
+// Try to load existing enrollment
+if (File.Exists("enrollment.json"))
 {
     try
     {
-        var groups = await graphClient.Me.CheckMemberGroups.PostAsync(new Microsoft.Graph.Me.CheckMemberGroups.CheckMemberGroupsPostRequestBody
+        var savedState = JsonSerializer.Deserialize<EnrollmentState>(File.ReadAllText("enrollment.json"));
+        if (savedState != null && savedState.IsEnrolled)
         {
-            GroupIds = new List<string> { AllowedGroupId }
-        });
-        
-        isAllowed = groups?.Value?.Contains(AllowedGroupId) ?? false;
-        Console.WriteLine($"Group Membership Check: {(isAllowed ? "Allowed" : "Denied")}");
+            isEnrolled = true;
+            userEmail = savedState.UserEmail;
+            userName = savedState.UserName;
+            Console.WriteLine($"Device already enrolled to: {userName} ({userEmail})");
+        }
     }
-    catch (Exception ex)
+    catch { }
+}
+
+if (!isEnrolled)
+{
+    // Generate a new code if we don't have one
+    enrollmentCode = GenerateEnrollmentCode();
+    Console.WriteLine("\n============================================");
+    Console.WriteLine("DEVICE NOT ENROLLED");
+    Console.WriteLine($"Please go to: http://localhost:3000/user/enroll");
+    Console.WriteLine($"And enter code: {enrollmentCode}");
+    Console.WriteLine("============================================\n");
+
+    // Poll for enrollment
+    while (!isEnrolled)
     {
-        Console.WriteLine($"Group check failed: {ex.Message}");
+        try
+        {
+            Console.Write(".");
+            var pollData = new
+            {
+                serialNumber = GetSerialNumber(),
+                hostname = Environment.MachineName,
+                enrollmentCode = enrollmentCode,
+                osBuild = GetOsVersion()
+            };
+
+            var response = await httpClient.PostAsJsonAsync(enrollUrl, pollData);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<EnrollmentResponse>();
+                if (result?.status == "enrolled")
+                {
+                    isEnrolled = true;
+                    userEmail = result.userEmail;
+                    userName = result.userName;
+                    
+                    // Save state
+                    var state = new EnrollmentState { IsEnrolled = true, UserEmail = userEmail, UserName = userName };
+                    File.WriteAllText("enrollment.json", JsonSerializer.Serialize(state));
+                    
+                    Console.WriteLine($"\nSuccessfully enrolled to {userName}!");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Console.WriteLine($"Poll error: {ex.Message}");
+        }
+        
+        if (!isEnrolled) await Task.Delay(5000);
     }
 }
 
-// 3. Main Compliance Loop
+// 2. Main Compliance Loop
 while (true)
 {
     try
@@ -79,10 +101,9 @@ while (true)
         var deviceInfo = new
         {
             hostname = Environment.MachineName,
-            serialNumber = GetSerialNumber(), // We'll implement this
+            serialNumber = GetSerialNumber(),
             osBuild = GetOsVersion(),
-            userEmail = me?.UserPrincipalName,
-            isUserAllowed = isAllowed,
+            userEmail = userEmail,
             checks = new
             {
                 bitlocker = GetBitLockerStatus(),
@@ -95,8 +116,7 @@ while (true)
 
         // Report to Dashboard
         Console.WriteLine($"Sending telemetry for {deviceInfo.hostname}...");
-        // Console.WriteLine(JsonSerializer.Serialize(deviceInfo, new JsonSerializerOptions { WriteIndented = true }));
-
+        
         var response = await httpClient.PostAsJsonAsync(dashboardUrl, deviceInfo);
         if (response.IsSuccessStatusCode)
         {
@@ -114,6 +134,14 @@ while (true)
 
     Console.WriteLine("Waiting 60 seconds...");
     await Task.Delay(60000);
+}
+
+string GenerateEnrollmentCode()
+{
+    const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    var random = new Random();
+    return new string(Enumerable.Repeat(chars, 6)
+        .Select(s => s[random.Next(s.Length)]).ToArray());
 }
 
 // --- Helper Methods (Ported from SERC_Compliance_Kit) ---
@@ -232,4 +260,19 @@ bool GetAntivirusStatus()
     }
     catch { }
     return false;
+}
+
+// --- Helper Classes ---
+class EnrollmentState
+{
+    public bool IsEnrolled { get; set; }
+    public string UserEmail { get; set; }
+    public string UserName { get; set; }
+}
+
+class EnrollmentResponse
+{
+    public string status { get; set; }
+    public string userEmail { get; set; }
+    public string userName { get; set; }
 }

@@ -215,30 +215,104 @@ function PrivacyStep() {
 }
 
 function EnrollStep() {
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("submitting");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/enroll/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.toUpperCase() }),
+      });
+
+      if (res.ok) {
+        setStatus("success");
+      } else {
+        const data = await res.json();
+        setStatus("error");
+        setErrorMsg(data.error || "Failed to verify code");
+      }
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg("Network error occurred");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <div className="animate-in fade-in slide-in-from-right-4 duration-500 text-center">
+        <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6 text-green-600 mx-auto">
+          <Check className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 mb-4">Device Enrolled!</h2>
+        <p className="text-slate-600 mb-8">
+          Your device has been successfully linked to your account. You can now access SERC resources.
+        </p>
+        <Link href="/user">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full text-sm font-medium shadow-md shadow-green-500/20 transition-all w-full">
+            Go to My Device Dashboard
+          </button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
         <Download className="w-8 h-8" />
       </div>
-      <h2 className="text-2xl font-bold text-slate-900 mb-4">Ready to Enroll?</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-4">Enter Enrollment Code</h2>
       <p className="text-slate-600 mb-8">
-        You're all set. If you haven't already, please run the SERC Compliance Agent on your device.
+        Run the SERC Compliance Agent on your device. It will display a 6-character code. Enter it below to link your device.
       </p>
 
-      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
-        <h3 className="font-semibold text-slate-900 mb-2">Already ran the agent?</h3>
-        <p className="text-sm text-slate-500 mb-4">Click below to verify your status and access the portal.</p>
-        
-        <div className="flex justify-center">
-           <div className="animate-pulse flex items-center gap-2 text-blue-600 text-sm font-medium bg-blue-50 px-4 py-2 rounded-full">
-             <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-              </span>
-             Waiting for device signal...
-           </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="code" className="block text-sm font-medium text-slate-700 mb-1">
+            Enrollment Code
+          </label>
+          <input
+            type="text"
+            id="code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="e.g. ABC123"
+            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all uppercase tracking-widest font-mono text-center text-lg"
+            maxLength={6}
+            required
+          />
         </div>
-      </div>
+
+        {status === "error" && (
+          <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+            <span className="font-bold">Error:</span> {errorMsg}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={status === "submitting" || code.length < 6}
+          className="w-full bg-[#0078d4] hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg text-sm font-medium shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all"
+        >
+          {status === "submitting" ? (
+            <>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              Verifying...
+            </>
+          ) : (
+            <>
+              Link Device <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      </form>
     </div>
   );
 }
