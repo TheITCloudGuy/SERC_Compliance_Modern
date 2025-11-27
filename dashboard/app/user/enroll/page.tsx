@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Shield, 
   Lock, 
@@ -16,11 +16,6 @@ import Link from "next/link";
 
 export default function EnrollmentPage() {
   const [step, setStep] = useState(1);
-  
-  // TODO: Replace with actual user email from your Auth Provider (e.g., NextAuth session)
-  // const { data: session } = useSession();
-  // const userEmail = session?.user?.email;
-  const userEmail = undefined; // Currently undefined to show all devices for testing
 
   const totalSteps = 4;
 
@@ -63,7 +58,7 @@ export default function EnrollmentPage() {
             {step === 1 && <WelcomeStep />}
             {step === 2 && <WhyStep />}
             {step === 3 && <PrivacyStep />}
-            {step === 4 && <EnrollStep userEmail={userEmail} />}
+            {step === 4 && <EnrollStep />}
           </div>
 
           {/* Navigation Buttons */}
@@ -219,34 +214,7 @@ function PrivacyStep() {
   );
 }
 
-function EnrollStep({ onDeviceFound, userEmail }: { onDeviceFound?: () => void, userEmail?: string }) {
-  const [status, setStatus] = useState<'waiting' | 'found'>('waiting');
-
-  useEffect(() => {
-    const checkDevice = async () => {
-      try {
-        // If we have a userEmail, filter by it. Otherwise, fetch all (for dev/testing).
-        const url = userEmail 
-          ? `/api/telemetry?email=${encodeURIComponent(userEmail)}`
-          : "/api/telemetry";
-          
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.length > 0) {
-            setStatus('found');
-            if (onDeviceFound) onDeviceFound();
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    const interval = setInterval(checkDevice, 2000);
-    return () => clearInterval(interval);
-  }, [onDeviceFound, userEmail]);
-
+function EnrollStep() {
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
@@ -262,20 +230,13 @@ function EnrollStep({ onDeviceFound, userEmail }: { onDeviceFound?: () => void, 
         <p className="text-sm text-slate-500 mb-4">Click below to verify your status and access the portal.</p>
         
         <div className="flex justify-center">
-           {status === 'waiting' ? (
-             <div className="animate-pulse flex items-center gap-2 text-blue-600 text-sm font-medium bg-blue-50 px-4 py-2 rounded-full">
-               <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                </span>
-               Waiting for device signal...
-             </div>
-           ) : (
-             <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-4 py-2 rounded-full">
-               <Check className="w-4 h-4" />
-               Device Connected!
-             </div>
-           )}
+           <div className="animate-pulse flex items-center gap-2 text-blue-600 text-sm font-medium bg-blue-50 px-4 py-2 rounded-full">
+             <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+              </span>
+             Waiting for device signal...
+           </div>
         </div>
       </div>
     </div>
