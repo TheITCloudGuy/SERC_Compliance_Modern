@@ -269,12 +269,17 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-slate-900 font-medium text-sm">{device.UserName || "Unknown"}</span>
-                            <span className="text-slate-500 text-xs">{device.UserEmail || "Unknown"}</span>
+                            <span className="text-slate-900 font-medium text-sm">{device.UserName || device.FullName || "Unknown"}</span>
+                            <span className="text-slate-500 text-xs">{device.UserEmail || device.Username || "Unknown"}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-slate-600 font-mono text-xs">
-                          {device.rowKey}
+                          <div>{device.rowKey}</div>
+                          {device.AzureAdDeviceId && (
+                            <div className="text-[10px] text-slate-400 mt-1" title="Azure AD Device ID">
+                              {device.AzureAdDeviceId}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {new Date(device.LastSeen).toLocaleString()}
@@ -388,8 +393,8 @@ export default function Dashboard() {
                   <div className="flex justify-between py-3 border-b border-slate-100">
                     <dt className="text-slate-500">Assigned User</dt>
                     <dd className="text-slate-900 font-medium text-right">
-                      <div>{selectedDevice.UserName || "Unknown"}</div>
-                      <div className="text-xs text-slate-500">{selectedDevice.UserEmail || "Unknown"}</div>
+                      <div>{selectedDevice.UserName || selectedDevice.FullName || "Unknown"}</div>
+                      <div className="text-xs text-slate-500">{selectedDevice.UserEmail || selectedDevice.Username || "Unknown"}</div>
                     </dd>
                   </div>
                   <div className="flex justify-between py-3 border-b border-slate-100">

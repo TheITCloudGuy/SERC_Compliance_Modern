@@ -27,8 +27,6 @@ export async function POST(request: Request) {
       IsCompliant: isCompliant,
       IsEnrolled: true,
       // Explicitly requested fields
-      FullName: userName,
-      Username: userEmail,
       Bitlocker: checks.bitlocker,
       Firewall: checks.firewall,
       TPM: checks.tpm,
@@ -38,10 +36,12 @@ export async function POST(request: Request) {
 
     if (userEmail && userEmail !== "Unknown") {
       entity.UserEmail = userEmail;
+      entity.Username = userEmail;
     }
 
     if (userName && userName !== "Unknown") {
       entity.UserName = userName;
+      entity.FullName = userName;
     }
 
     if (azureAdDeviceId) {
