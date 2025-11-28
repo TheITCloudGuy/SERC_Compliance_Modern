@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { 
   ShieldCheck, 
@@ -18,7 +19,9 @@ import {
   X,
   CheckCircle2,
   XCircle,
-  Trash2
+  Trash2,
+  Home,
+  PlusCircle
 } from "lucide-react";
 
 interface Device {
@@ -44,6 +47,7 @@ interface Device {
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -132,10 +136,38 @@ export default function Dashboard() {
       {/* Top Navigation Bar - Microsoft 365 Style */}
       <header className="bg-[#0078d4] text-white h-12 flex items-center px-4 justify-between shadow-sm sticky top-0 z-50">
         <div className="flex items-center gap-4">
-          <div className="grid grid-cols-3 gap-0.5 p-2 hover:bg-white/10 rounded cursor-pointer">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="w-1 h-1 bg-white rounded-full"></div>
-            ))}
+          <div className="relative">
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="grid grid-cols-3 gap-0.5 p-2 hover:bg-white/10 rounded cursor-pointer outline-none"
+            >
+              {[...Array(9)].map((_, i) => (
+                <div key={i} className="w-1 h-1 bg-white rounded-full"></div>
+              ))}
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 p-2 z-50 text-slate-800">
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/" className="flex flex-col items-center justify-center p-4 hover:bg-slate-50 rounded-lg transition-colors text-slate-700 hover:text-[#0078d4]">
+                    <Home className="w-6 h-6 mb-2" />
+                    <span className="text-xs font-medium">Home</span>
+                  </Link>
+                  <Link href="/user" className="flex flex-col items-center justify-center p-4 hover:bg-slate-50 rounded-lg transition-colors text-slate-700 hover:text-[#0078d4]">
+                    <Monitor className="w-6 h-6 mb-2" />
+                    <span className="text-xs font-medium">My Devices</span>
+                  </Link>
+                  <Link href="/user/enroll" className="flex flex-col items-center justify-center p-4 hover:bg-slate-50 rounded-lg transition-colors text-slate-700 hover:text-[#0078d4]">
+                    <PlusCircle className="w-6 h-6 mb-2" />
+                    <span className="text-xs font-medium">Add Device</span>
+                  </Link>
+                  <Link href="/admin" className="flex flex-col items-center justify-center p-4 bg-blue-50 text-blue-700 rounded-lg transition-colors">
+                    <LayoutGrid className="w-6 h-6 mb-2" />
+                    <span className="text-xs font-medium">Admin</span>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
           <span className="font-semibold text-lg tracking-tight">SERC | Device Compliance</span>
         </div>

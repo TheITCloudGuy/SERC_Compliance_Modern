@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { 
   Shield, 
   Lock, 
@@ -11,11 +12,18 @@ import {
   Download, 
   ArrowRight,
   Laptop,
-  User
+  User,
+  Grip,
+  LayoutDashboard,
+  PlusCircle,
+  Monitor,
+  Home
 } from "lucide-react";
 import Link from "next/link";
 
 export default function EnrollmentPage() {
+  const { data: session } = useSession();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [step, setStep] = useState(1);
 
   const totalSteps = 5;
@@ -24,7 +32,50 @@ export default function EnrollmentPage() {
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex flex-col items-center justify-center p-4 font-sans text-slate-800">
+    <div className="min-h-screen bg-[#f0f2f5] flex flex-col font-sans text-slate-800">
+      {/* Navigation Header */}
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <Shield className="w-6 h-6 text-[#0078d4]" />
+          <span className="font-bold text-slate-900">SERC Device Access</span>
+        </div>
+        
+        <div className="relative">
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
+          >
+            <Grip className="w-6 h-6" />
+          </button>
+
+          {isMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 p-2 z-50">
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/" className="flex flex-col items-center justify-center p-4 hover:bg-slate-50 rounded-lg transition-colors text-slate-700 hover:text-[#0078d4]">
+                  <Home className="w-6 h-6 mb-2" />
+                  <span className="text-xs font-medium">Home</span>
+                </Link>
+                <Link href="/user" className="flex flex-col items-center justify-center p-4 hover:bg-slate-50 rounded-lg transition-colors text-slate-700 hover:text-[#0078d4]">
+                  <Monitor className="w-6 h-6 mb-2" />
+                  <span className="text-xs font-medium">My Devices</span>
+                </Link>
+                <Link href="/user/enroll" className="flex flex-col items-center justify-center p-4 bg-blue-50 text-blue-700 rounded-lg transition-colors">
+                  <PlusCircle className="w-6 h-6 mb-2" />
+                  <span className="text-xs font-medium">Add Device</span>
+                </Link>
+                {session?.user?.isAdmin && (
+                  <Link href="/admin" className="flex flex-col items-center justify-center p-4 hover:bg-slate-50 rounded-lg transition-colors text-slate-700 hover:text-[#0078d4]">
+                    <LayoutDashboard className="w-6 h-6 mb-2" />
+                    <span className="text-xs font-medium">Admin</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
       {/* Header Logo Area */}
       <div className="mb-8 text-center">
         <div className="w-12 h-12 bg-[#0078d4] text-white rounded-lg flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-900/20">
@@ -96,6 +147,7 @@ export default function EnrollmentPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
