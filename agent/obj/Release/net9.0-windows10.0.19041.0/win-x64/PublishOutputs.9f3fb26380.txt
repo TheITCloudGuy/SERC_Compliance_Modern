@@ -1,0 +1,2 @@
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\publish\SERC_Compliance_Agent.pdb
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\agent\publish\SERC_Compliance_Agent.exe

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "z5QZRap1rh8=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\installer\\SERC.Installer.wixproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\LAB-MAIN\\.nuget\\packages\\wixtoolset.ui.wixext\\5.0.1\\wixtoolset.ui.wixext.5.0.1.nupkg.sha512",
+    "C:\\Users\\LAB-MAIN\\.nuget\\packages\\wixtoolset.util.wixext\\5.0.1\\wixtoolset.util.wixext.5.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}

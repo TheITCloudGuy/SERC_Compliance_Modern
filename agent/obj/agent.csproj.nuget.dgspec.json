@@ -8,7 +8,7 @@
       "version": "1.0.0",
       "restore": {
         "projectUniqueName": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\agent\\agent.csproj",
-        "projectName": "agent",
+        "projectName": "SERC_Compliance_Agent",
         "projectPath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\agent\\agent.csproj",
         "packagesPath": "C:\\Users\\LAB-MAIN\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\agent\\obj\\",
@@ -58,6 +58,12 @@
               "target": "Package",
               "version": "[5.56.0, )"
             },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.11, )",
+              "autoReferenced": true
+            },
             "System.Management": {
               "target": "Package",
               "version": "[8.0.0, )"
@@ -80,8 +86,20 @@
           "warn": true,
           "downloadDependencies": [
             {
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
+              "version": "[9.0.11, 9.0.11]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
+              "version": "[9.0.11, 9.0.11]"
+            },
+            {
               "name": "Microsoft.Windows.SDK.NET.Ref",
               "version": "[10.0.19041.57, 10.0.19041.57]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
+              "version": "[9.0.11, 9.0.11]"
             }
           ],
           "frameworkReferences": {
@@ -96,6 +114,11 @@
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.307/PortableRuntimeIdentifierGraph.json"
+        }
+      },
+      "runtimes": {
+        "win-x64": {
+          "#import": []
         }
       }
     }

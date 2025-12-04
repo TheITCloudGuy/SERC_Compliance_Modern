@@ -1,0 +1,6 @@
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\SERC.Installer.wixproj.CoreCompileInputs.cache
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\bin\Release\SERC.Installer.msi
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\bin\Release\SERC.Installer.wixpdb
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\SERC.Installer.msi
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\SERC.Installer.wixpdb
+C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\SERC.Installer.wixproj.BindTracking-neutral.txt

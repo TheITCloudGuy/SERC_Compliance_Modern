@@ -1,0 +1,7 @@
+BuiltPdbOutput	C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\SERC.Installer.wixpdb
+BuiltTargetOutput	C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\SERC.Installer.msi
+Input	..\agent\publish\SERC_Compliance_Agent.exe
+Input	..\agent\publish\SERC_Compliance_Agent.pdb
+Input	..\service\publish\SERC.ComplianceService.exe
+Input	..\service\publish\SERC.ComplianceService.pdb
+Intermediate	C:\Users\LAB-MAIN\Documents\GitHub\SERC_Compliance_Modern\installer\obj\Release\#cab1.cab

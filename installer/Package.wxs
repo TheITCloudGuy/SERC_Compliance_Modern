@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- SERC Compliance Suite MSI Installer -->
+<!-- WiX v5 Format -->
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="SERC Compliance Suite"
+           Manufacturer="SERC"
+           Version="1.0.0.0"
+           UpgradeCode="A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
+           Scope="perMachine"
+           Language="1033">
+
+    <SummaryInformation Description="SERC Compliance Suite - Device Security Monitoring"
+                        Manufacturer="SERC" />
+
+    <!-- Allow upgrades -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  Schedule="afterInstallInitialize" />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Installation directory structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="SERC">
+        <Directory Id="ComplianceServiceFolder" Name="ComplianceService" />
+        <Directory Id="TrayAppFolder" Name="TrayApp" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- ProgramData directory for app data -->
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="SERCDataFolder" Name="SERC">
+        <Directory Id="ComplianceServiceDataFolder" Name="ComplianceService" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Start Menu shortcuts -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="SERCProgramMenuFolder" Name="SERC Compliance" />
+    </StandardDirectory>
+
+    <!-- Startup folder for tray app -->
+    <StandardDirectory Id="StartupFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Feature: Complete installation -->
+    <Feature Id="Complete" Title="SERC Compliance Suite" Level="1">
+      <ComponentGroupRef Id="ServiceComponents" />
+      <ComponentGroupRef Id="TrayAppComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+      <ComponentGroupRef Id="DataFolderComponents" />
+    </Feature>
+
+  </Package>
+
+  <!-- Data Folder Components -->
+  <Fragment>
+    <ComponentGroup Id="DataFolderComponents" Directory="ComplianceServiceDataFolder">
+      <Component Id="DataFolder" Guid="00000001-0001-0001-0001-000000000001">
+        <CreateFolder />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Service Components -->
+  <Fragment>
+    <ComponentGroup Id="ServiceComponents" Directory="ComplianceServiceFolder">
+      
+      <!-- Main Service Executable -->
+      <Component Id="ServiceExe" Guid="11111111-1111-1111-1111-111111111111">
+        <File Id="SERC.ComplianceService.exe" 
+              Source="..\service\publish\SERC.ComplianceService.exe" 
+              KeyPath="yes" />
+        
+        <!-- Install as Windows Service -->
+        <ServiceInstall Id="SERCComplianceService"
+                        Type="ownProcess"
+                        Name="SERC.ComplianceService"
+                        DisplayName="SERC Compliance Service"
+                        Description="Monitors device security compliance and reports to SERC dashboard"
+                        Start="auto"
+                        Account="LocalSystem"
+                        ErrorControl="normal" />
+        
+        <!-- Control service during install/uninstall -->
+        <ServiceControl Id="StartService"
+                        Name="SERC.ComplianceService"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
+      </Component>
+
+      <!-- Service PDB (optional, for debugging) -->
+      <Component Id="ServicePdb" Guid="22222222-2222-2222-2222-222222222222">
+        <File Id="SERC.ComplianceService.pdb" 
+              Source="..\service\publish\SERC.ComplianceService.pdb" 
+              KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Tray App Components -->
+  <Fragment>
+    <ComponentGroup Id="TrayAppComponents" Directory="TrayAppFolder">
+      
+      <!-- Main Tray App Executable -->
+      <Component Id="TrayAppExe" Guid="33333333-3333-3333-3333-333333333333">
+        <File Id="SERC_Compliance_Agent.exe" 
+              Source="..\agent\publish\SERC_Compliance_Agent.exe" 
+              KeyPath="yes" />
+      </Component>
+
+      <!-- Tray App PDB (optional, for debugging) -->
+      <Component Id="TrayAppPdb" Guid="44444444-4444-4444-4444-444444444444">
+        <File Id="SERC_Compliance_Agent.pdb" 
+              Source="..\agent\publish\SERC_Compliance_Agent.pdb" 
+              KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+
+  <!-- Shortcut Components -->
+  <Fragment>
+    <ComponentGroup Id="ShortcutComponents">
+      
+      <!-- Start Menu Shortcut -->
+      <Component Id="StartMenuShortcut" Directory="SERCProgramMenuFolder" Guid="55555555-5555-5555-5555-555555555555">
+        <Shortcut Id="TrayAppStartMenuShortcut"
+                  Name="SERC Compliance Agent"
+                  Description="SERC Device Compliance Monitor"
+                  Target="[TrayAppFolder]SERC_Compliance_Agent.exe"
+                  WorkingDirectory="TrayAppFolder" />
+        
+        <RemoveFolder Id="RemoveSERCProgramMenuFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\SERC\ComplianceAgent" 
+                       Name="StartMenuInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <!-- Auto-start with Windows (Startup folder shortcut) -->
+      <Component Id="StartupShortcut" Directory="StartupFolder" Guid="66666666-6666-6666-6666-666666666666">
+        <Shortcut Id="TrayAppStartupShortcut"
+                  Name="SERC Compliance Agent"
+                  Description="SERC Device Compliance Monitor"
+                  Target="[TrayAppFolder]SERC_Compliance_Agent.exe"
+                  WorkingDirectory="TrayAppFolder" />
+        
+        <RegistryValue Root="HKCU" Key="Software\SERC\ComplianceAgent" 
+                       Name="StartupInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <!-- Desktop Shortcut -->
+      <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="77777777-7777-7777-7777-777777777777">
+        <Shortcut Id="TrayAppDesktopShortcut"
+                  Name="SERC Compliance Agent"
+                  Description="SERC Device Compliance Monitor"
+                  Target="[TrayAppFolder]SERC_Compliance_Agent.exe"
+                  WorkingDirectory="TrayAppFolder" />
+        
+        <RegistryValue Root="HKCU" Key="Software\SERC\ComplianceAgent" 
+                       Name="DesktopInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+
+</Wix>

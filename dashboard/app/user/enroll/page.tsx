@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import {
   Shield,
@@ -17,7 +17,8 @@ import {
   LayoutDashboard,
   PlusCircle,
   Monitor,
-  Home
+  Home,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 
@@ -340,8 +341,28 @@ function ConnectAccountStep() {
 
 function EnrollStep() {
   const [code, setCode] = useState("");
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "syncing" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [countdown, setCountdown] = useState(10);
+
+  // Handle countdown and redirect when syncing
+  useEffect(() => {
+    if (status === "syncing") {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            // Use window.location for a full page refresh
+            window.location.href = "/user";
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -357,6 +378,11 @@ function EnrollStep() {
 
       if (res.ok) {
         setStatus("success");
+        // After showing success briefly, switch to syncing state
+        setTimeout(() => {
+          setStatus("syncing");
+          setCountdown(10);
+        }, 1500);
       } else {
         const data = await res.json();
         setStatus("error");
@@ -368,6 +394,34 @@ function EnrollStep() {
     }
   };
 
+  // Syncing state - show "Adding device..." animation
+  if (status === "syncing") {
+    return (
+      <div className="animate-fade-in-up text-center">
+        <div className="w-20 h-20 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6 text-blue-400 mx-auto border border-blue-500/30">
+          <RefreshCw className="w-8 h-8 animate-spin" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-4">Adding Device...</h2>
+        <p className="text-white/60 mb-6">
+          Please wait while we sync your device information. This ensures your compliance status is accurately reported.
+        </p>
+
+        {/* Progress bar */}
+        <div className="w-full bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${((10 - countdown) / 10) * 100}%` }}
+          ></div>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 text-white/50 text-sm">
+          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+          <span>Syncing device data... ({countdown}s)</span>
+        </div>
+      </div>
+    );
+  }
+
   if (status === "success") {
     return (
       <div className="animate-fade-in-up text-center">
@@ -376,13 +430,12 @@ function EnrollStep() {
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Device Enrolled!</h2>
         <p className="text-white/60 mb-8">
-          Your device has been successfully linked to your account. You can now access SERC resources.
+          Your device has been successfully linked to your account.
         </p>
-        <Link href="/user">
-          <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl text-sm font-medium shadow-lg shadow-green-600/25 transition-all w-full">
-            Go to My Device Dashboard
-          </button>
-        </Link>
+        <div className="flex items-center justify-center gap-2 text-white/50 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" />
+          <span>Preparing dashboard...</span>
+        </div>
       </div>
     );
   }

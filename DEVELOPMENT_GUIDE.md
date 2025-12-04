@@ -6,15 +6,45 @@ This guide outlines how to run the various components of the SERC Compliance sol
 
 Ensure you have the following installed:
 *   **Node.js (LTS):** Required for the Dashboard (Next.js).
-*   **.NET 9.0 SDK:** Required for the Agent.
+*   **.NET 9.0 SDK:** Required for the Agent and Service.
 *   **Visual Studio Code:** Recommended editor.
+
+## Architecture Overview
+
+The solution uses a **Hybrid Architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Windows System                               │
+│                                                                      │
+│  ┌──────────────────────────────────┐   ┌────────────────────────┐  │
+│  │    SERC Compliance Service       │   │    SERC Tray App       │  │
+│  │    (Windows Service)             │   │    (User Interface)    │  │
+│  │                                  │   │                        │  │
+│  │  ✓ Runs at system startup       │   │  ✓ Shows system tray   │  │
+│  │  ✓ 30-min compliance checks     │←─→│    icon                │  │
+│  │  ✓ Sends telemetry to dashboard │ IPC│  ✓ Displays status     │  │
+│  │  ✓ Runs as SYSTEM user          │   │  ✓ Toast notifications │  │
+│  └──────────────────────────────────┘   │  ✓ User enrollment     │  │
+│                       │                 └────────────────────────┘  │
+│                       ▼                                              │
+│            ┌─────────────────────┐                                   │
+│            │  Dashboard (Next.js)│                                   │
+│            │  + Vercel/Cloud     │                                   │
+│            └─────────────────────┘                                   │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ## Component Overview
 
-The solution consists of three main parts that need to run simultaneously:
-1.  **Azurite:** Local emulator for Azure Storage (Tables/Queues/Blobs).
-2.  **Dashboard:** The Next.js web application (Frontend + API).
-3.  **Agent:** The .NET console application running on the device.
+The solution consists of these main components:
+
+| Component | Description | Location |
+|-----------|-------------|----------|
+| **Dashboard** | Next.js web application (Admin UI + API) | `dashboard/` |
+| **Compliance Service** | Windows Service for background monitoring | `service/` |
+| **Tray App** | WinForms tray application for user interaction | `agent/` |
+| **Installer** | Deployment scripts and MSI builder | `installer/` |
 
 ---
 
@@ -55,33 +85,87 @@ npm run dev
 
 ---
 
-## 3. Start the Compliance Agent
+## 3. Run the Agent (Development Mode)
 
-The agent simulates the client device software. It collects telemetry and sends it to the Dashboard API.
-
-1.  Open a **new** terminal.
-2.  Navigate to the `agent` directory.
-3.  Run the application.
+For development, you can run the tray app directly:
 
 ```powershell
 cd agent
 dotnet run
 ```
 
-*   **Authentication:** On the first run, a browser window may open asking you to sign in. Use your test tenant credentials.
-*   **Output:** You should see logs indicating "Sending telemetry..." and "Success: Telemetry sent."
+This will launch the tray application which:
+- Connects to the Windows Service (if installed) via IPC
+- Falls back to standalone mode if service isn't running
+- Handles device enrollment and displays compliance status
+
+---
+
+## 4. Run the Windows Service (Development Mode)
+
+For development, you can run the service as a console app:
+
+```powershell
+cd service
+dotnet run
+```
+
+The service will detect it's not running as a Windows Service and run in console mode.
+
+---
+
+## Building for Production
+
+### Build Both Components
+
+```powershell
+# Build agent (tray app)
+dotnet publish agent/agent.csproj -c Release -o agent/publish
+
+# Build service
+dotnet publish service/SERC.ComplianceService.csproj -c Release -o service/publish
+```
+
+### Install as Windows Service
+
+```powershell
+# Run as Administrator
+cd service
+.\Install-Service.ps1 -Install -ServicePath ".\publish\SERC.ComplianceService.exe"
+.\Install-Service.ps1 -Start
+```
+
+### Full Suite Installation
+
+```powershell
+# Run as Administrator
+.\Install-Suite.ps1
+```
+
+This will:
+1. Install the Windows Service (auto-starts with Windows)
+2. Install the Tray App with startup shortcut
+3. Create Start Menu shortcuts
+4. Start both applications
 
 ---
 
 ## Troubleshooting
 
 ### Port Conflicts
-*   **Next.js:** Defaults to port `3000`. If occupied, it may switch to `3001`. Check the terminal output. If it changes, you must update the `dashboardUrl` in `agent/Program.cs`.
-*   **Azurite:** Defaults to `10000` (Blob), `10001` (Queue), `10002` (Table). Ensure these ports are free.
+*   **Next.js:** Defaults to port `3000`. If occupied, it may switch to `3001`.
+*   **Azurite:** Defaults to `10000` (Blob), `10001` (Queue), `10002` (Table).
 
 ### Database Errors
-*   If you see errors related to "Connection Refused" in the API logs, ensure Azurite is running.
-*   If the table doesn't exist, the API is designed to create it automatically on the first request.
+*   If you see "Connection Refused" errors, ensure Azurite is running.
+*   Tables are created automatically on first request.
 
-### Authentication Issues
-*   The Agent uses `InteractiveBrowserCredential`. Ensure the configured `TenantId` and `ClientId` in `Program.cs` match your Azure AD App Registration.
+### Service Issues
+*   Check service status: `Get-Service -Name "SERC.ComplianceService"`
+*   View logs: `Get-EventLog -LogName Application -Source "SERC Compliance Service" -Newest 10`
+
+### IPC Connection Issues
+*   Ensure both service and tray app are running
+*   Check Windows Defender Firewall isn't blocking named pipes
+*   The tray app will work in standalone mode if service is unavailable
+

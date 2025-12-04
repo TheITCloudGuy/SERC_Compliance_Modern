@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\installer\\SERC.Installer.wixproj": {}
+  },
+  "projects": {
+    "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\installer\\SERC.Installer.wixproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\installer\\SERC.Installer.wixproj",
+        "projectName": "SERC.Installer",
+        "projectPath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\installer\\SERC.Installer.wixproj",
+        "packagesPath": "C:\\Users\\LAB-MAIN\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\installer\\obj\\",
+        "projectStyle": "PackageReference",
+        "UsingMicrosoftNETSdk": false,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\LAB-MAIN\\Documents\\GitHub\\SERC_Compliance_Modern\\NuGet.Config",
+          "C:\\Users\\LAB-MAIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "native"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "native": {
+            "targetAlias": "native",
+            "projectReferences": {}
+          }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "native": {
+          "targetAlias": "native",
+          "dependencies": {
+            "WixToolset.UI.wixext": {
+              "target": "Package",
+              "version": "[5.0.1, )"
+            },
+            "WixToolset.Util.wixext": {
+              "target": "Package",
+              "version": "[5.0.1, )"
+            }
+          }
+        }
+      }
+    }
+  }
+}
