@@ -510,13 +510,65 @@ public class MainForm : Form
     {
         if (_ipcClient != null && _serviceConnected)
         {
+            var aadStatus = GetAzureAdStatus();
             var state = new EnrollmentState
             {
                 IsEnrolled = isEnrolled,
                 UserEmail = userEmail,
-                UserName = userName
+                UserName = userName,
+                AzureAdDeviceId = aadStatus.DeviceId,
+                AzureAdJoinType = aadStatus.JoinType
             };
             await _ipcClient.SendEnrollmentUpdateAsync(state);
+        }
+    }
+    
+    /// <summary>
+    /// Save Azure AD info to the enrollment file so the service can use it.
+    /// The service runs as SYSTEM and cannot get Azure AD info directly.
+    /// </summary>
+    private async Task SaveAzureAdInfoAsync(string deviceId, string joinType)
+    {
+        try
+        {
+            // Read existing enrollment state
+            EnrollmentState? state = null;
+            if (File.Exists(EnrollmentFilePath))
+            {
+                var json = await File.ReadAllTextAsync(EnrollmentFilePath);
+                state = JsonSerializer.Deserialize<EnrollmentState>(json);
+            }
+            
+            if (state == null)
+            {
+                state = new EnrollmentState
+                {
+                    IsEnrolled = isEnrolled,
+                    UserEmail = userEmail,
+                    UserName = userName
+                };
+            }
+            
+            // Update Azure AD info if changed
+            if (state.AzureAdDeviceId != deviceId || state.AzureAdJoinType != joinType)
+            {
+                state.AzureAdDeviceId = deviceId;
+                state.AzureAdJoinType = joinType;
+                
+                var updatedJson = JsonSerializer.Serialize(state);
+                await File.WriteAllTextAsync(EnrollmentFilePath, updatedJson);
+                
+                // Also notify service via IPC if connected
+                if (_ipcClient != null && _serviceConnected)
+                {
+                    await _ipcClient.SendEnrollmentUpdateAsync(state);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't fail the compliance check if we can't save Azure AD info
+            System.Diagnostics.Debug.WriteLine($"Failed to save Azure AD info: {ex.Message}");
         }
     }
 
@@ -698,6 +750,9 @@ public class MainForm : Form
                 detailLabel.Text = "Waiting for Work Account connection...";
                 return;
             }
+            
+            // Save Azure AD info for the service (which runs as SYSTEM and can't get this directly)
+            await SaveAzureAdInfoAsync(aadStatus.DeviceId, aadStatus.JoinType);
 
             // Get current compliance checks
             var bitlockerStatus = GetBitLockerStatus();
@@ -1293,6 +1348,10 @@ public class EnrollmentState
     public bool IsEnrolled { get; set; }
     public string? UserEmail { get; set; }
     public string? UserName { get; set; }
+    
+    // Azure AD info - cached for the service which runs as SYSTEM and can't get this directly
+    public string? AzureAdDeviceId { get; set; }
+    public string? AzureAdJoinType { get; set; }
 }
 
 class EnrollmentResponse

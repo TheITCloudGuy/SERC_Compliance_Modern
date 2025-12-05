@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("SERC Compliance Monitoring Windows Service")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2090ea9d1da43255f39d206d42184cc88d009c9b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+af7e90d19fd943243de98e93dc6c39724245813f")]
 [assembly: System.Reflection.AssemblyProductAttribute("SERC.ComplianceService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SERC.ComplianceService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

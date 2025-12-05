@@ -2,12 +2,17 @@ namespace SERC.ComplianceService;
 
 /// <summary>
 /// Tracks device enrollment state.
+/// Also stores Azure AD info since the service (running as SYSTEM) cannot access it directly.
 /// </summary>
 public class EnrollmentState
 {
     public bool IsEnrolled { get; set; }
     public string? UserEmail { get; set; }
     public string? UserName { get; set; }
+    
+    // Azure AD info cached by the agent (service runs as SYSTEM and can't get this)
+    public string? AzureAdDeviceId { get; set; }
+    public string? AzureAdJoinType { get; set; }
 }
 
 /// <summary>

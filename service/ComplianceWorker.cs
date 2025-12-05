@@ -18,11 +18,12 @@ public class ComplianceWorker : BackgroundService
     private const string DashboardUrl = "https://serc-compliance-modern.vercel.app/api/telemetry";
     private const string EnrollUrl = "https://serc-compliance-modern.vercel.app/api/enroll/poll";
     
-    // Check every 30 minutes in production
-    private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(30);
+    // Check interval - toggle between testing and production
+    // TESTING: 30 seconds
+    private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(30);
     
-    // For testing, use 30 seconds
-    // private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(30);
+    // PRODUCTION: 15 minutes
+    // private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(15);
     
     private EnrollmentState? _enrollmentState;
     private ComplianceState? _previousComplianceState;
@@ -44,11 +45,25 @@ public class ComplianceWorker : BackgroundService
         var appDataPath = Path.Combine(programData, "SERC", "ComplianceService");
         Directory.CreateDirectory(appDataPath);
         _enrollmentFilePath = Path.Combine(appDataPath, "enrollment.json");
+        
+        // Subscribe to enrollment updates from the tray app via IPC
+        _ipcServer.EnrollmentUpdated += OnEnrollmentUpdated;
+    }
+    
+    /// <summary>
+    /// Handle enrollment updates received from the tray app via IPC.
+    /// </summary>
+    private void OnEnrollmentUpdated(object? sender, EnrollmentState state)
+    {
+        _logger.LogInformation("Received enrollment update via IPC: Enrolled={enrolled}, User={user}", 
+            state.IsEnrolled, state.UserEmail);
+        UpdateEnrollmentState(state);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("SERC Compliance Service starting at: {time}", DateTimeOffset.Now);
+        _logger.LogInformation("Check interval set to: {interval}", CheckInterval);
         
         // Start the IPC server for communication with tray app
         _ = Task.Run(() => _ipcServer.StartAsync(stoppingToken), stoppingToken);
@@ -57,21 +72,26 @@ public class ComplianceWorker : BackgroundService
         LoadEnrollmentState();
         
         // Initial compliance check
+        _logger.LogInformation("Running initial compliance check...");
         await RunComplianceCheckAsync(stoppingToken);
         
         // Periodic compliance checks
+        _logger.LogInformation("Starting periodic check loop. Next check in {interval}", CheckInterval);
         using var timer = new PeriodicTimer(CheckInterval);
         
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                _logger.LogInformation("Waiting for next check interval ({interval})...", CheckInterval);
                 await timer.WaitForNextTickAsync(stoppingToken);
+                _logger.LogInformation("Timer tick - running scheduled compliance check");
                 await RunComplianceCheckAsync(stoppingToken);
             }
             catch (OperationCanceledException)
             {
                 // Expected when stopping
+                _logger.LogInformation("Service cancellation requested");
                 break;
             }
             catch (Exception ex)
@@ -119,10 +139,14 @@ public class ComplianceWorker : BackgroundService
         
         try
         {
+            // Reload enrollment state from file in case it was updated by the tray app
+            // (The tray app also notifies via IPC, but this catches file-only updates)
+            LoadEnrollmentState();
+            
             // Check if enrolled
             if (_enrollmentState == null || !_enrollmentState.IsEnrolled)
             {
-                _logger.LogInformation("Device not enrolled, skipping telemetry");
+                _logger.LogInformation("Device not enrolled (checked file: {path}), skipping telemetry", _enrollmentFilePath);
                 await NotifyTrayAppAsync(new ServiceMessage
                 {
                     Type = "enrollment_required",
@@ -131,19 +155,38 @@ public class ComplianceWorker : BackgroundService
                 return;
             }
 
-            // Get Azure AD status
-            var aadStatus = _complianceChecker.GetAzureAdStatus();
+            // Get Azure AD status - prefer cached values from agent since service runs as SYSTEM
+            string azureAdDeviceId;
+            string azureAdJoinType;
             
-            if (string.IsNullOrEmpty(aadStatus.JoinType))
+            if (!string.IsNullOrEmpty(_enrollmentState.AzureAdDeviceId) && 
+                !string.IsNullOrEmpty(_enrollmentState.AzureAdJoinType))
             {
-                _logger.LogWarning("Device not joined to Azure AD");
-                await NotifyTrayAppAsync(new ServiceMessage
+                // Use cached Azure AD info from the agent
+                azureAdDeviceId = _enrollmentState.AzureAdDeviceId;
+                azureAdJoinType = _enrollmentState.AzureAdJoinType;
+                _logger.LogInformation("Using cached Azure AD info: {joinType}, DeviceId: {deviceId}", 
+                    azureAdJoinType, azureAdDeviceId);
+            }
+            else
+            {
+                // Try direct check as fallback (may not work when running as SYSTEM)
+                var aadStatus = _complianceChecker.GetAzureAdStatus();
+                azureAdDeviceId = aadStatus.DeviceId;
+                azureAdJoinType = aadStatus.JoinType;
+                
+                if (string.IsNullOrEmpty(azureAdJoinType))
                 {
-                    Type = "aad_required",
-                    Message = "Work account connection required",
-                    Timestamp = DateTime.UtcNow
-                });
-                return;
+                    _logger.LogWarning("Device not joined to Azure AD (no cached info available). " +
+                        "The agent needs to run at least once to cache Azure AD info.");
+                    await NotifyTrayAppAsync(new ServiceMessage
+                    {
+                        Type = "aad_required",
+                        Message = "Work account connection required",
+                        Timestamp = DateTime.UtcNow
+                    });
+                    return;
+                }
             }
 
             // Run all compliance checks
@@ -172,8 +215,8 @@ public class ComplianceWorker : BackgroundService
                 osBuild = Environment.OSVersion.Version.ToString(),
                 userEmail = _enrollmentState.UserEmail,
                 userName = _enrollmentState.UserName,
-                azureAdDeviceId = aadStatus.DeviceId,
-                joinType = aadStatus.JoinType,
+                azureAdDeviceId = azureAdDeviceId,
+                joinType = azureAdJoinType,
                 checks = new
                 {
                     bitlocker = currentState.BitLocker,
