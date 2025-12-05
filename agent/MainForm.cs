@@ -86,6 +86,19 @@ public class MainForm : Form
         InitializeTrayIcon();
         InitializeLogic();
         InitializeServiceConnection();
+        
+        // Start minimized to system tray
+        this.WindowState = FormWindowState.Minimized;
+        this.ShowInTaskbar = false;
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        
+        // Hide the form immediately on startup - agent runs in system tray
+        this.Hide();
+        this.Visible = false;
     }
 
     private void InitializeTrayIcon()
