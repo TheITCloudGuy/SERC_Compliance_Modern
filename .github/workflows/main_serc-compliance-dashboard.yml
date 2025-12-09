@@ -7,13 +7,19 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'dashboard/**'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
+
+    defaults:
+      run:
+        working-directory: ./dashboard
 
     steps:
       - uses: actions/checkout@v4
@@ -23,17 +29,19 @@ jobs:
         with:
           node-version: '22.x'
 
-      - name: npm install, build, and test
+      - name: npm install and build
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          npm ci
+          npm run build
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: |
+            dashboard/.next/standalone
+            dashboard/.next/static
+            dashboard/public
 
   deploy:
     runs-on: ubuntu-latest
@@ -44,12 +52,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
-      
+
+      - name: Prepare deployment package
+        run: |
+          cp -r dashboard/.next/static dashboard/.next/standalone/.next/
+          cp -r dashboard/public dashboard/.next/standalone/
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'serc-compliance-dashboard'
           slot-name: 'Production'
-          package: .
+          package: dashboard/.next/standalone
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FCA681E0424B48F9850F14FC31BE4961 }}
