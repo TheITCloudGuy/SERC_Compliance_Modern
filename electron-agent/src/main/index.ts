@@ -23,8 +23,8 @@ let isQuitting = false
 let mainWindow: BrowserWindow | null = null
 
 // API URLs
-const DASHBOARD_URL = 'https://serc-compliance-modern.vercel.app/api/telemetry'
-const ENROLL_URL = 'https://serc-compliance-modern.vercel.app/api/enroll/poll'
+const DASHBOARD_URL = 'https://compliance.serc.ac.uk/api/telemetry'
+const ENROLL_URL = 'https://compliance.serc.ac.uk/api/enroll/poll'
 
 // Compliance check interval (5 minutes - reduced from 30s to lower CPU usage)
 // Each check spawns multiple PowerShell processes, so less frequent = less CPU
