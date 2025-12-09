@@ -6,6 +6,7 @@ const utils = require("@electron-toolkit/utils");
 const fs = require("fs");
 const util = require("util");
 const os = require("os");
+const electronUpdater = require("electron-updater");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
   if (e) {
@@ -322,13 +323,83 @@ function save() {
     console.error("Failed to save store:", error);
   }
 }
+function initAutoUpdater(mainWindow2) {
+  electronUpdater.autoUpdater.autoDownload = true;
+  electronUpdater.autoUpdater.autoInstallOnAppQuit = true;
+  electronUpdater.autoUpdater.logger = {
+    info: (message) => logger.info(`[AutoUpdater] ${message}`),
+    warn: (message) => logger.warn(`[AutoUpdater] ${message}`),
+    error: (message) => logger.error(`[AutoUpdater] ${message}`),
+    debug: (message) => logger.debug(`[AutoUpdater] ${message}`)
+  };
+  electronUpdater.autoUpdater.on("checking-for-update", () => {
+    logger.info("[AutoUpdater] Checking for updates...");
+    mainWindow2?.webContents.send("update-status", { status: "checking" });
+  });
+  electronUpdater.autoUpdater.on("update-available", (info) => {
+    logger.info("[AutoUpdater] Update available", info);
+    mainWindow2?.webContents.send("update-status", {
+      status: "available",
+      version: info.version,
+      releaseDate: info.releaseDate
+    });
+  });
+  electronUpdater.autoUpdater.on("update-not-available", (info) => {
+    logger.info("[AutoUpdater] No updates available", info);
+    mainWindow2?.webContents.send("update-status", { status: "up-to-date" });
+  });
+  electronUpdater.autoUpdater.on("download-progress", (progress) => {
+    logger.info("[AutoUpdater] Download progress", {
+      percent: progress.percent,
+      transferred: progress.transferred,
+      total: progress.total
+    });
+    mainWindow2?.webContents.send("update-status", {
+      status: "downloading",
+      percent: Math.round(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total
+    });
+  });
+  electronUpdater.autoUpdater.on("update-downloaded", (info) => {
+    logger.info("[AutoUpdater] Update downloaded, will install on quit", info);
+    mainWindow2?.webContents.send("update-status", {
+      status: "downloaded",
+      version: info.version
+    });
+  });
+  electronUpdater.autoUpdater.on("error", (error) => {
+    logger.error("[AutoUpdater] Error", error);
+    mainWindow2?.webContents.send("update-status", {
+      status: "error",
+      message: error.message
+    });
+  });
+}
+async function checkForUpdates() {
+  try {
+    logger.info("[AutoUpdater] Initiating update check");
+    await electronUpdater.autoUpdater.checkForUpdates();
+  } catch (error) {
+    logger.error("[AutoUpdater] Failed to check for updates", error);
+  }
+}
+function installUpdateNow() {
+  logger.info("[AutoUpdater] Installing update and restarting...");
+  electronUpdater.autoUpdater.quitAndInstall(false, true);
+}
+function getCurrentVersion() {
+  return electron.app.getVersion();
+}
+const REMOTE_UI_URL = "https://compliance.serc.ac.uk/agent-ui";
+const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1e3;
 let isQuitting = false;
 let mainWindow = null;
 const DASHBOARD_URL = "https://compliance.serc.ac.uk/api/telemetry";
 const ENROLL_URL = "https://compliance.serc.ac.uk/api/enroll/poll";
 const COMPLIANCE_CHECK_INTERVAL = 5 * 60 * 1e3;
 let complianceIntervalId = null;
-function createWindow() {
+async function createWindow() {
   const iconPath = utils.is.dev ? path.join(process.cwd(), "resources", "icon.ico") : path.join(process.resourcesPath, "resources", "icon.ico");
   let icon;
   try {
@@ -368,11 +439,35 @@ function createWindow() {
       mainWindow?.hide();
     }
   });
+  await loadRenderer(mainWindow);
+}
+async function loadRenderer(window) {
   if (utils.is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-    mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
+    logger.info("Loading renderer from Vite dev server");
+    window.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+    return;
   }
+  if (!utils.is.dev) {
+    try {
+      logger.info("Attempting to load remote UI from", { url: REMOTE_UI_URL });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5e3);
+      const response = await fetch(REMOTE_UI_URL, {
+        method: "HEAD",
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (response.ok) {
+        logger.info("Remote UI is reachable, loading...");
+        window.loadURL(REMOTE_UI_URL);
+        return;
+      }
+    } catch (error) {
+      logger.warn("Remote UI not reachable, falling back to local files", error);
+    }
+  }
+  logger.info("Loading renderer from local files");
+  window.loadFile(path.join(__dirname, "../renderer/index.html"));
 }
 function generateEnrollmentCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -530,6 +625,15 @@ function setupIpcHandlers() {
   electron.ipcMain.on("close-window", () => {
     mainWindow?.hide();
   });
+  electron.ipcMain.handle("get-app-version", () => {
+    return getCurrentVersion();
+  });
+  electron.ipcMain.handle("check-for-updates", async () => {
+    await checkForUpdates();
+  });
+  electron.ipcMain.on("install-update", () => {
+    installUpdateNow();
+  });
 }
 function startComplianceLoop() {
   if (complianceIntervalId) {
@@ -550,7 +654,7 @@ function startComplianceLoop() {
   }, COMPLIANCE_CHECK_INTERVAL);
   logger.info("Compliance loop started successfully", { intervalId: String(complianceIntervalId) });
 }
-electron.app.whenReady().then(() => {
+electron.app.whenReady().then(async () => {
   initLogger();
   logger.info("App ready event fired");
   initStore();
@@ -572,10 +676,19 @@ electron.app.whenReady().then(() => {
   });
   setupIpcHandlers();
   logger.info("IPC handlers set up");
-  createWindow();
+  await createWindow();
   logger.info("Main window created");
   createTray(mainWindow);
   logger.info("System tray created");
+  if (!utils.is.dev && mainWindow) {
+    initAutoUpdater(mainWindow);
+    logger.info("Auto-updater initialized");
+    checkForUpdates();
+    setInterval(() => {
+      logger.info("Periodic update check");
+      checkForUpdates();
+    }, UPDATE_CHECK_INTERVAL);
+  }
   const isEnrolled = get("isEnrolled", false);
   logger.info("Enrollment status checked", { isEnrolled });
   if (isEnrolled) {

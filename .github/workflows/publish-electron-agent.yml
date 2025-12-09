@@ -1,0 +1,55 @@
+name: Publish Electron Agent
+
+on:
+  # Trigger manually from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.1)'
+        required: true
+        type: string
+  
+  # Or trigger when a version tag is pushed
+  push:
+    tags:
+      - 'agent-v*'
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: electron-agent/package-lock.json
+
+      - name: Install dependencies
+        working-directory: electron-agent
+        run: npm ci
+
+      - name: Update version (if manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: electron-agent
+        run: |
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      - name: Build and Publish
+        working-directory: electron-agent
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run publish:win
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-agent-installer
+          path: |
+            electron-agent/dist/*.exe
+            electron-agent/dist/latest.yml
+          retention-days: 30

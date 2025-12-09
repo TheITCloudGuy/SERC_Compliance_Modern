@@ -8,13 +8,15 @@
         "dev": "electron-vite dev",
         "build": "electron-vite build",
         "build:win": "electron-vite build && electron-builder --win",
+        "publish:win": "electron-vite build && electron-builder --win --publish always",
         "preview": "electron-vite preview",
         "start": "electron-vite preview",
         "postinstall": "electron-builder install-app-deps"
     },
     "dependencies": {
         "@electron/remote": "^2.1.2",
-        "@electron-toolkit/utils": "^3.0.0"
+        "@electron-toolkit/utils": "^3.0.0",
+        "electron-updater": "^6.3.9"
     },
     "devDependencies": {
         "@types/node": "^20.10.0",
@@ -48,6 +50,12 @@
                 ]
             }
         ],
+        "publish": {
+            "provider": "github",
+            "owner": "TheITCloudGuy",
+            "repo": "SERC_Compliance_Modern",
+            "releaseType": "release"
+        },
         "win": {
             "target": [
                 {

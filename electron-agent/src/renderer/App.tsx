@@ -19,6 +19,11 @@ declare global {
             showWindow: () => void
             minimizeWindow: () => void
             closeWindow: () => void
+            // Auto-update
+            getAppVersion: () => Promise<string>
+            checkForUpdates: () => Promise<void>
+            installUpdate: () => void
+            onUpdateStatus: (callback: (data: UpdateStatus) => void) => void
         }
     }
 }
@@ -61,6 +66,16 @@ export interface SystemInfo {
     osBuild: string
     deviceId: string
     joinType: string
+}
+
+export interface UpdateStatus {
+    status: 'checking' | 'available' | 'up-to-date' | 'downloading' | 'downloaded' | 'error'
+    version?: string
+    releaseDate?: string
+    percent?: number
+    transferred?: number
+    total?: number
+    message?: string
 }
 
 function App() {

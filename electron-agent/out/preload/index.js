@@ -26,5 +26,12 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   // Window control
   showWindow: () => electron.ipcRenderer.send("show-window"),
   minimizeWindow: () => electron.ipcRenderer.send("minimize-window"),
-  closeWindow: () => electron.ipcRenderer.send("close-window")
+  closeWindow: () => electron.ipcRenderer.send("close-window"),
+  // Auto-update
+  getAppVersion: () => electron.ipcRenderer.invoke("get-app-version"),
+  checkForUpdates: () => electron.ipcRenderer.invoke("check-for-updates"),
+  installUpdate: () => electron.ipcRenderer.send("install-update"),
+  onUpdateStatus: (callback) => {
+    electron.ipcRenderer.on("update-status", (_, data) => callback(data));
+  }
 });

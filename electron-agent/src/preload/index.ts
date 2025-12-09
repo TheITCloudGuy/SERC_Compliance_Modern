@@ -32,7 +32,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Window control
     showWindow: () => ipcRenderer.send('show-window'),
     minimizeWindow: () => ipcRenderer.send('minimize-window'),
-    closeWindow: () => ipcRenderer.send('close-window')
+    closeWindow: () => ipcRenderer.send('close-window'),
+
+    // Auto-update
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    installUpdate: () => ipcRenderer.send('install-update'),
+    onUpdateStatus: (callback: (data: UpdateStatus) => void) => {
+        ipcRenderer.on('update-status', (_, data) => callback(data))
+    }
 })
 
 // Type definitions
@@ -53,4 +61,14 @@ interface CheckProgress {
     current: number
     total: number
     name: string
+}
+
+interface UpdateStatus {
+    status: 'checking' | 'available' | 'up-to-date' | 'downloading' | 'downloaded' | 'error'
+    version?: string
+    releaseDate?: string
+    percent?: number
+    transferred?: number
+    total?: number
+    message?: string
 }

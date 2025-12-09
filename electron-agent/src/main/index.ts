@@ -15,7 +15,16 @@ import {
 } from './windows-api'
 import { initStore, get, set } from './store'
 import { initLogger, logger, getLogPath } from './logger'
+import { initAutoUpdater, checkForUpdates, getCurrentVersion, installUpdateNow } from './auto-updater'
 import * as os from 'os'
+
+// Remote UI URL - set this to your hosted dashboard URL for the agent UI
+// When deployed, the app will load UI from this URL instead of bundled files
+const REMOTE_UI_URL = 'https://compliance.serc.ac.uk/agent-ui'
+// Set to true to always use remote UI in production (when available)
+const USE_REMOTE_UI = true
+// Auto-update check interval (check every 4 hours)
+const UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000
 
 // Track if app is quitting (used to differentiate close vs minimize to tray)
 let isQuitting = false
@@ -33,7 +42,7 @@ const COMPLIANCE_CHECK_INTERVAL = 5 * 60 * 1000
 // Track the compliance check interval timer
 let complianceIntervalId: ReturnType<typeof setInterval> | null = null
 
-function createWindow(): void {
+async function createWindow(): Promise<void> {
     // Load icon for taskbar and window
     // In dev mode, use process.cwd(); in production, use process.resourcesPath
     const iconPath = is.dev
@@ -84,11 +93,46 @@ function createWindow(): void {
     })
 
     // Load the renderer
+    await loadRenderer(mainWindow)
+}
+
+// Load renderer - tries remote URL first, falls back to local files
+async function loadRenderer(window: BrowserWindow): Promise<void> {
+    // In development, use Vite dev server
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-        mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-    } else {
-        mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+        logger.info('Loading renderer from Vite dev server')
+        window.loadURL(process.env['ELECTRON_RENDERER_URL'])
+        return
     }
+
+    // In production, try remote UI first if enabled
+    if (USE_REMOTE_UI && !is.dev) {
+        try {
+            logger.info('Attempting to load remote UI from', { url: REMOTE_UI_URL })
+
+            // Check if remote URL is reachable
+            const controller = new AbortController()
+            const timeout = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
+            const response = await fetch(REMOTE_UI_URL, {
+                method: 'HEAD',
+                signal: controller.signal
+            })
+            clearTimeout(timeout)
+
+            if (response.ok) {
+                logger.info('Remote UI is reachable, loading...')
+                window.loadURL(REMOTE_UI_URL)
+                return
+            }
+        } catch (error) {
+            logger.warn('Remote UI not reachable, falling back to local files', error)
+        }
+    }
+
+    // Fallback to local bundled files
+    logger.info('Loading renderer from local files')
+    window.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
 // Generate enrollment code (same as .NET agent)
@@ -291,6 +335,19 @@ function setupIpcHandlers(): void {
     ipcMain.on('close-window', () => {
         mainWindow?.hide()
     })
+
+    // Auto-update handlers
+    ipcMain.handle('get-app-version', () => {
+        return getCurrentVersion()
+    })
+
+    ipcMain.handle('check-for-updates', async () => {
+        await checkForUpdates()
+    })
+
+    ipcMain.on('install-update', () => {
+        installUpdateNow()
+    })
 }
 
 // Start the compliance check loop
@@ -323,7 +380,7 @@ function startComplianceLoop(): void {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     // Initialize logger first so we can log everything
     initLogger()
     logger.info('App ready event fired')
@@ -359,11 +416,26 @@ app.whenReady().then(() => {
     setupIpcHandlers()
     logger.info('IPC handlers set up')
 
-    createWindow()
+    await createWindow()
     logger.info('Main window created')
 
     createTray(mainWindow!)
     logger.info('System tray created')
+
+    // Initialize auto-updater (production only)
+    if (!is.dev && mainWindow) {
+        initAutoUpdater(mainWindow)
+        logger.info('Auto-updater initialized')
+
+        // Check for updates on startup
+        checkForUpdates()
+
+        // Set up periodic update checks
+        setInterval(() => {
+            logger.info('Periodic update check')
+            checkForUpdates()
+        }, UPDATE_CHECK_INTERVAL)
+    }
 
     // Start compliance loop if enrolled
     const isEnrolled = get('isEnrolled', false)

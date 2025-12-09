@@ -1,0 +1,399 @@
+/* Agent UI Styles - Scoped to agent-ui-container */
+/* These styles mirror the electron-agent renderer styles but are scoped to avoid conflicts with dashboard */
+
+/* ===== CSS VARIABLES ===== */
+.agent-ui-container {
+    --agent-background: #0f0f14;
+    --agent-foreground: #f5f5f7;
+    --card-bg: rgba(26, 26, 36, 0.95);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --card-hover-border: rgba(255, 255, 255, 0.15);
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --glow-blue: rgba(59, 130, 246, 0.4);
+    --glow-purple: rgba(139, 92, 246, 0.4);
+    --glow-green: rgba(16, 185, 129, 0.4);
+    --glow-red: rgba(239, 68, 68, 0.4);
+
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--agent-background);
+    color: var(--agent-foreground);
+    overflow: hidden;
+    user-select: none;
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+.agent-ui-container ::-webkit-scrollbar {
+    width: 6px;
+}
+
+.agent-ui-container ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.agent-ui-container ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.agent-ui-container ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* OPTIMIZED: Simpler animations with GPU acceleration and reduced CPU cost */
+@keyframes orbFloat1 {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    50% {
+        transform: translate3d(30px, -15px, 0);
+    }
+}
+
+@keyframes orbFloat2 {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    50% {
+        transform: translate3d(-25px, 20px, 0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* ===== ANIMATION UTILITIES ===== */
+.agent-ui-container .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.agent-ui-container .animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.agent-ui-container .animate-slide-up {
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.agent-ui-container .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+}
+
+/* ===== FLOATING ORBS (CPU OPTIMIZED) ===== */
+.agent-ui-container .floating-orbs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+    transform: translateZ(0);
+    will-change: auto;
+}
+
+.agent-ui-container .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(20px);
+    opacity: 0.35;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+.agent-ui-container .orb-1 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.2));
+    top: -100px;
+    right: -80px;
+    animation: orbFloat1 25s ease-in-out infinite;
+}
+
+.agent-ui-container .orb-2 {
+    width: 250px;
+    height: 250px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.15));
+    bottom: -80px;
+    left: -60px;
+    animation: orbFloat2 30s ease-in-out infinite;
+}
+
+/* Pause animations when reduced motion preferred */
+@media (prefers-reduced-motion: reduce) {
+    .agent-ui-container .orb {
+        animation: none !important;
+    }
+}
+
+/* ===== GLASSMORPHISM CARD ===== */
+.agent-ui-container .glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-ui-container .glass-card:hover {
+    border-color: var(--card-hover-border);
+}
+
+.agent-ui-container .glass-card-glow-green {
+    box-shadow: 0 0 40px -10px var(--glow-green),
+        0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.agent-ui-container .glass-card-glow-red {
+    box-shadow: 0 0 40px -10px var(--glow-red),
+        0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.agent-ui-container .glass-card-glow-orange {
+    box-shadow: 0 0 40px -10px rgba(245, 158, 11, 0.4),
+        0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+/* ===== GRADIENT TEXT ===== */
+.agent-ui-container .gradient-text {
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 50%, #818cf8 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.agent-ui-container .gradient-text-blue {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.agent-ui-container .gradient-text-green {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ===== STATUS BADGE ===== */
+.agent-ui-container .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+.agent-ui-container .status-badge-green {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.agent-ui-container .status-badge-red {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.agent-ui-container .status-badge-orange {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.agent-ui-container .status-badge-blue {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* ===== COMPLIANCE CHECK ITEM ===== */
+.agent-ui-container .check-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+}
+
+.agent-ui-container .check-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+}
+
+.agent-ui-container .check-item.passed {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.agent-ui-container .check-item.failed {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* ===== BUTTON STYLES ===== */
+.agent-ui-container .btn-primary {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    color: white;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.agent-ui-container .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px -10px var(--glow-blue);
+}
+
+.agent-ui-container .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.agent-ui-container .btn-ghost {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.agent-ui-container .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.agent-ui-container .btn-ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== ENROLMENT CODE ===== */
+.agent-ui-container .enrolment-code {
+    font-family: 'Consolas', 'Monaco', monospace;
+    letter-spacing: 0.3em;
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ===== DIVIDER ===== */
+.agent-ui-container .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* ===== PULSE DOT ===== */
+.agent-ui-container .pulse-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.agent-ui-container .pulse-dot.green {
+    background: var(--accent-green);
+    box-shadow: 0 0 10px var(--glow-green);
+}
+
+.agent-ui-container .pulse-dot.blue {
+    background: var(--accent-blue);
+    box-shadow: 0 0 10px var(--glow-blue);
+}
+
+/* ===== PROGRESS BAR ===== */
+.agent-ui-container .progress-bar-fill {
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+    box-shadow: 0 0 10px var(--glow-blue);
+}
