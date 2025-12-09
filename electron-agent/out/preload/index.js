@@ -21,6 +21,8 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   },
   // System info
   getSystemInfo: () => electron.ipcRenderer.invoke("get-system-info"),
+  // Debug/logging
+  getLogPath: () => electron.ipcRenderer.invoke("get-log-path"),
   // Window control
   showWindow: () => electron.ipcRenderer.send("show-window"),
   minimizeWindow: () => electron.ipcRenderer.send("minimize-window"),

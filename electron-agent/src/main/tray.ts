@@ -1,6 +1,7 @@
 import { Tray, Menu, app, nativeImage, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
+import { logger } from './logger'
 
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
@@ -30,6 +31,7 @@ export function createTray(window: BrowserWindow): Tray {
         {
             label: 'Show',
             click: () => {
+                logger.info('Tray: Show clicked')
                 mainWindow?.show()
                 mainWindow?.focus()
             }
@@ -38,7 +40,9 @@ export function createTray(window: BrowserWindow): Tray {
         {
             label: 'Exit',
             click: () => {
-                app.isQuitting = true
+                logger.info('Tray: Exit clicked - quitting app')
+                // Emit before-quit to set the isQuitting flag in index.ts
+                app.emit('before-quit')
                 app.quit()
             }
         }
@@ -49,6 +53,7 @@ export function createTray(window: BrowserWindow): Tray {
 
     // Double-click to show window
     tray.on('double-click', () => {
+        logger.info('Tray: Double-click - showing window')
         mainWindow?.show()
         mainWindow?.focus()
     })
@@ -59,6 +64,7 @@ export function createTray(window: BrowserWindow): Tray {
 export function updateTrayIcon(isCompliant: boolean): void {
     if (!tray) return
 
+    logger.debug('Updating tray tooltip', { isCompliant })
     // Update tooltip based on compliance status
     tray.setToolTip(
         isCompliant

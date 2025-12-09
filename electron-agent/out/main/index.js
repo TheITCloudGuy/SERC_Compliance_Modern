@@ -3,9 +3,9 @@ const electron = require("electron");
 const path = require("path");
 const child_process = require("child_process");
 const utils = require("@electron-toolkit/utils");
+const fs = require("fs");
 const util = require("util");
 const os = require("os");
-const fs = require("fs");
 function _interopNamespaceDefault(e) {
   const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
   if (e) {
@@ -23,6 +23,79 @@ function _interopNamespaceDefault(e) {
   return Object.freeze(n);
 }
 const os__namespace = /* @__PURE__ */ _interopNamespaceDefault(os);
+const MAX_LOG_SIZE = 5 * 1024 * 1024;
+const MAX_LOG_FILES = 3;
+let logPath = "";
+let isInitialized = false;
+function initLogger() {
+  const userDataPath = electron.app.getPath("userData");
+  const logsDir = path.join(userDataPath, "logs");
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+  logPath = path.join(logsDir, "agent.log");
+  isInitialized = true;
+  log("info", "=".repeat(60));
+  log("info", `SERC Compliance Agent Started - v${electron.app.getVersion()}`);
+  log("info", `Log file: ${logPath}`);
+  log("info", `User Data Path: ${userDataPath}`);
+  log("info", "=".repeat(60));
+}
+function getLogPath() {
+  return logPath;
+}
+function rotateLogIfNeeded() {
+  if (!fs.existsSync(logPath)) return;
+  try {
+    const stats = fs.statSync(logPath);
+    if (stats.size > MAX_LOG_SIZE) {
+      for (let i = MAX_LOG_FILES - 1; i >= 1; i--) {
+        const oldPath = `${logPath}.${i}`;
+        const newPath = `${logPath}.${i + 1}`;
+        if (fs.existsSync(oldPath)) {
+          if (i === MAX_LOG_FILES - 1) {
+          } else {
+            fs.renameSync(oldPath, newPath);
+          }
+        }
+      }
+      fs.renameSync(logPath, `${logPath}.1`);
+    }
+  } catch (error) {
+  }
+}
+function log(level, message, data2) {
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  const levelStr = level.toUpperCase().padEnd(5);
+  let logLine = `[${timestamp}] [${levelStr}] ${message}`;
+  if (data2 !== void 0) {
+    try {
+      if (typeof data2 === "object") {
+        logLine += ` | ${JSON.stringify(data2)}`;
+      } else {
+        logLine += ` | ${data2}`;
+      }
+    } catch {
+      logLine += ` | [Unserializable data]`;
+    }
+  }
+  const consoleMethod = level === "error" ? console.error : level === "warn" ? console.warn : console.log;
+  consoleMethod(logLine);
+  if (isInitialized && logPath) {
+    try {
+      rotateLogIfNeeded();
+      fs.appendFileSync(logPath, logLine + "\n", "utf-8");
+    } catch (error) {
+      console.error("Failed to write to log file:", error);
+    }
+  }
+}
+const logger = {
+  info: (message, data2) => log("info", message, data2),
+  warn: (message, data2) => log("warn", message, data2),
+  error: (message, data2) => log("error", message, data2),
+  debug: (message, data2) => log("debug", message, data2)
+};
 let tray = null;
 let mainWindow$1 = null;
 function createTray(window) {
@@ -42,6 +115,7 @@ function createTray(window) {
     {
       label: "Show",
       click: () => {
+        logger.info("Tray: Show clicked");
         mainWindow$1?.show();
         mainWindow$1?.focus();
       }
@@ -50,7 +124,8 @@ function createTray(window) {
     {
       label: "Exit",
       click: () => {
-        electron.app.isQuitting = true;
+        logger.info("Tray: Exit clicked - quitting app");
+        electron.app.emit("before-quit");
         electron.app.quit();
       }
     }
@@ -58,6 +133,7 @@ function createTray(window) {
   tray.setToolTip("SERC Compliance Agent");
   tray.setContextMenu(contextMenu);
   tray.on("double-click", () => {
+    logger.info("Tray: Double-click - showing window");
     mainWindow$1?.show();
     mainWindow$1?.focus();
   });
@@ -65,6 +141,7 @@ function createTray(window) {
 }
 function updateTrayIcon(isCompliant) {
   if (!tray) return;
+  logger.debug("Updating tray tooltip", { isCompliant });
   tray.setToolTip(
     isCompliant ? "SERC Compliance Agent - Compliant" : "SERC Compliance Agent - Non-Compliant"
   );
@@ -250,6 +327,7 @@ let mainWindow = null;
 const DASHBOARD_URL = "https://serc-compliance-modern.vercel.app/api/telemetry";
 const ENROLL_URL = "https://serc-compliance-modern.vercel.app/api/enroll/poll";
 const COMPLIANCE_CHECK_INTERVAL = 5 * 60 * 1e3;
+let complianceIntervalId = null;
 function createWindow() {
   const iconPath = utils.is.dev ? path.join(process.cwd(), "resources", "icon.ico") : path.join(process.resourcesPath, "resources", "icon.ico");
   let icon;
@@ -328,24 +406,31 @@ async function checkEnrollment(code) {
   return null;
 }
 async function runComplianceCheck(showProgress = true) {
-  console.log(`[${(/* @__PURE__ */ new Date()).toLocaleTimeString()}] Running compliance check (showProgress: ${showProgress})`);
+  logger.info(`Running compliance check (showProgress: ${showProgress})`);
   try {
     const totalChecks = 5;
     if (showProgress) {
       mainWindow?.webContents.send("compliance-check-start", { total: totalChecks });
     }
     const serialNumber = await getSerialNumber();
+    logger.debug("Serial number retrieved", { serialNumber });
     const bitlocker = await getBitLockerStatus();
+    logger.debug("BitLocker status", { bitlocker });
     if (showProgress) mainWindow?.webContents.send("compliance-check-progress", { current: 1, total: totalChecks, name: "BitLocker" });
     const tpm = await getTpmStatus();
+    logger.debug("TPM status", { tpm });
     if (showProgress) mainWindow?.webContents.send("compliance-check-progress", { current: 2, total: totalChecks, name: "TPM" });
     const secureBoot = await getSecureBootStatus();
+    logger.debug("Secure Boot status", { secureBoot });
     if (showProgress) mainWindow?.webContents.send("compliance-check-progress", { current: 3, total: totalChecks, name: "Secure Boot" });
     const firewall = await getFirewallStatus();
+    logger.debug("Firewall status", { firewall });
     if (showProgress) mainWindow?.webContents.send("compliance-check-progress", { current: 4, total: totalChecks, name: "Firewall" });
     const antivirus = await getAntivirusStatus();
+    logger.debug("Antivirus status", { antivirus });
     if (showProgress) mainWindow?.webContents.send("compliance-check-progress", { current: 5, total: totalChecks, name: "Antivirus" });
     const aadStatus = await getAzureAdStatus();
+    logger.debug("Azure AD Status", aadStatus);
     const hostname = os__namespace.hostname();
     const osBuild = getOsVersion();
     const userEmail = get("userEmail", "");
@@ -362,14 +447,16 @@ async function runComplianceCheck(showProgress = true) {
       joinType: aadStatus.joinType,
       checks: complianceState
     };
+    logger.info("Sending telemetry to API", deviceInfo);
     try {
-      await fetch(DASHBOARD_URL, {
+      const response = await fetch(DASHBOARD_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(deviceInfo)
       });
+      logger.info("API response", { status: response.status, ok: response.ok });
     } catch (apiError) {
-      console.error("API send error:", apiError);
+      logger.error("API send error", apiError);
     }
     mainWindow?.webContents.send("compliance-update", {
       ...complianceState,
@@ -377,9 +464,10 @@ async function runComplianceCheck(showProgress = true) {
       azureAdStatus: aadStatus
     });
     updateTrayIcon(isCompliant);
+    logger.info("Compliance check completed", { isCompliant });
     return;
   } catch (error) {
-    console.error("Compliance check error:", error);
+    logger.error("Compliance check error", error);
     mainWindow?.webContents.send("compliance-check-error");
   }
 }
@@ -405,10 +493,12 @@ function setupIpcHandlers() {
   electron.ipcMain.handle("check-enrollment", async (_, code) => {
     const result = await checkEnrollment(code);
     if (result?.status === "enrolled") {
+      logger.info("Device enrolled successfully", { userEmail: result.userEmail, userName: result.userName });
       set("isEnrolled", true);
       set("userEmail", result.userEmail || "");
       set("userName", result.userName || "");
       showNotification("SERC Compliance", "Device enrolled successfully!");
+      startComplianceLoop();
     }
     return result;
   });
@@ -427,6 +517,9 @@ function setupIpcHandlers() {
       ...aadStatus
     };
   });
+  electron.ipcMain.handle("get-log-path", () => {
+    return getLogPath();
+  });
   electron.ipcMain.on("show-window", () => {
     mainWindow?.show();
     mainWindow?.focus();
@@ -438,17 +531,39 @@ function setupIpcHandlers() {
     mainWindow?.hide();
   });
 }
+function startComplianceLoop() {
+  if (complianceIntervalId) {
+    logger.warn("Compliance loop already running, not starting new one");
+    return;
+  }
+  logger.info("Starting compliance check loop", { intervalMs: COMPLIANCE_CHECK_INTERVAL });
+  runComplianceCheck(true).catch((err) => {
+    logger.error("Initial compliance check failed", err);
+  });
+  complianceIntervalId = setInterval(async () => {
+    logger.info("Interval triggered - starting background compliance check");
+    try {
+      await runComplianceCheck(false);
+    } catch (err) {
+      logger.error("Background compliance check threw an error", err);
+    }
+  }, COMPLIANCE_CHECK_INTERVAL);
+  logger.info("Compliance loop started successfully", { intervalId: String(complianceIntervalId) });
+}
 electron.app.whenReady().then(() => {
+  initLogger();
+  logger.info("App ready event fired");
   initStore();
+  logger.info("Store initialized");
   utils.electronApp.setAppUserModelId("com.serc.compliance-agent");
   if (!utils.is.dev && process.platform === "win32") {
     const exePath = process.execPath;
     const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, "\\\\")}\\" --hidden'"`;
     child_process.exec(regCommand, (error) => {
       if (error) {
-        console.error("Failed to set auto-start registry:", error);
+        logger.error("Failed to set auto-start registry", error);
       } else {
-        console.log("Auto-start registry entry created");
+        logger.info("Auto-start registry entry created");
       }
     });
   }
@@ -456,17 +571,25 @@ electron.app.whenReady().then(() => {
     utils.optimizer.watchWindowShortcuts(window);
   });
   setupIpcHandlers();
+  logger.info("IPC handlers set up");
   createWindow();
+  logger.info("Main window created");
   createTray(mainWindow);
-  if (get("isEnrolled", false)) {
-    runComplianceCheck(true);
-    setInterval(() => runComplianceCheck(false), COMPLIANCE_CHECK_INTERVAL);
+  logger.info("System tray created");
+  const isEnrolled = get("isEnrolled", false);
+  logger.info("Enrollment status checked", { isEnrolled });
+  if (isEnrolled) {
+    startComplianceLoop();
+  } else {
+    logger.info("Device not enrolled - compliance loop not started");
   }
 });
 electron.app.on("before-quit", () => {
+  logger.info("App before-quit event - setting isQuitting=true");
   isQuitting = true;
 });
 electron.app.on("window-all-closed", () => {
+  logger.info("All windows closed");
   if (process.platform !== "darwin") {
     electron.app.quit();
   }

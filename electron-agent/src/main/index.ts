@@ -14,6 +14,7 @@ import {
     getAzureAdStatus
 } from './windows-api'
 import { initStore, get, set } from './store'
+import { initLogger, logger, getLogPath } from './logger'
 import * as os from 'os'
 
 // Track if app is quitting (used to differentiate close vs minimize to tray)
@@ -28,6 +29,9 @@ const ENROLL_URL = 'https://serc-compliance-modern.vercel.app/api/enroll/poll'
 // Compliance check interval (5 minutes - reduced from 30s to lower CPU usage)
 // Each check spawns multiple PowerShell processes, so less frequent = less CPU
 const COMPLIANCE_CHECK_INTERVAL = 5 * 60 * 1000
+
+// Track the compliance check interval timer
+let complianceIntervalId: ReturnType<typeof setInterval> | null = null
 
 function createWindow(): void {
     // Load icon for taskbar and window
@@ -127,7 +131,7 @@ async function checkEnrollment(code: string): Promise<{ status: string; userEmai
 // Run compliance check and send to API
 // showProgress: only show progress bar on first open, not background checks
 async function runComplianceCheck(showProgress: boolean = true): Promise<void> {
-    console.log(`[${new Date().toLocaleTimeString()}] Running compliance check (showProgress: ${showProgress})`)
+    logger.info(`Running compliance check (showProgress: ${showProgress})`)
     try {
         const totalChecks = 5
 
@@ -138,24 +142,31 @@ async function runComplianceCheck(showProgress: boolean = true): Promise<void> {
 
         // Get serial number first (needed for API)
         const serialNumber = await getSerialNumber()
+        logger.debug('Serial number retrieved', { serialNumber })
 
         // Run checks sequentially with progress updates
         const bitlocker = await getBitLockerStatus()
+        logger.debug('BitLocker status', { bitlocker })
         if (showProgress) mainWindow?.webContents.send('compliance-check-progress', { current: 1, total: totalChecks, name: 'BitLocker' })
 
         const tpm = await getTpmStatus()
+        logger.debug('TPM status', { tpm })
         if (showProgress) mainWindow?.webContents.send('compliance-check-progress', { current: 2, total: totalChecks, name: 'TPM' })
 
         const secureBoot = await getSecureBootStatus()
+        logger.debug('Secure Boot status', { secureBoot })
         if (showProgress) mainWindow?.webContents.send('compliance-check-progress', { current: 3, total: totalChecks, name: 'Secure Boot' })
 
         const firewall = await getFirewallStatus()
+        logger.debug('Firewall status', { firewall })
         if (showProgress) mainWindow?.webContents.send('compliance-check-progress', { current: 4, total: totalChecks, name: 'Firewall' })
 
         const antivirus = await getAntivirusStatus()
+        logger.debug('Antivirus status', { antivirus })
         if (showProgress) mainWindow?.webContents.send('compliance-check-progress', { current: 5, total: totalChecks, name: 'Antivirus' })
 
         const aadStatus = await getAzureAdStatus()
+        logger.debug('Azure AD Status', aadStatus)
 
         const hostname = os.hostname()
         const osBuild = getOsVersion()
@@ -176,15 +187,17 @@ async function runComplianceCheck(showProgress: boolean = true): Promise<void> {
             joinType: aadStatus.joinType,
             checks: complianceState
         }
+        logger.info('Sending telemetry to API', deviceInfo)
 
         try {
-            await fetch(DASHBOARD_URL, {
+            const response = await fetch(DASHBOARD_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(deviceInfo)
             })
+            logger.info('API response', { status: response.status, ok: response.ok })
         } catch (apiError) {
-            console.error('API send error:', apiError)
+            logger.error('API send error', apiError)
         }
 
         // Update renderer with final results
@@ -197,9 +210,10 @@ async function runComplianceCheck(showProgress: boolean = true): Promise<void> {
         // Update tray icon
         updateTrayIcon(isCompliant)
 
+        logger.info('Compliance check completed', { isCompliant })
         return
     } catch (error) {
-        console.error('Compliance check error:', error)
+        logger.error('Compliance check error', error)
         // Notify renderer of error so it can reset state
         mainWindow?.webContents.send('compliance-check-error')
     }
@@ -232,10 +246,14 @@ function setupIpcHandlers(): void {
     ipcMain.handle('check-enrollment', async (_, code: string) => {
         const result = await checkEnrollment(code)
         if (result?.status === 'enrolled') {
+            logger.info('Device enrolled successfully', { userEmail: result.userEmail, userName: result.userName })
             set('isEnrolled', true)
             set('userEmail', result.userEmail || '')
             set('userName', result.userName || '')
             showNotification('SERC Compliance', 'Device enrolled successfully!')
+
+            // Start the compliance loop now that we're enrolled
+            startComplianceLoop()
         }
         return result
     })
@@ -257,6 +275,10 @@ function setupIpcHandlers(): void {
         }
     })
 
+    ipcMain.handle('get-log-path', () => {
+        return getLogPath()
+    })
+
     ipcMain.on('show-window', () => {
         mainWindow?.show()
         mainWindow?.focus()
@@ -271,10 +293,44 @@ function setupIpcHandlers(): void {
     })
 }
 
+// Start the compliance check loop
+// This function can be called when enrollment completes to start the loop
+function startComplianceLoop(): void {
+    if (complianceIntervalId) {
+        logger.warn('Compliance loop already running, not starting new one')
+        return
+    }
+
+    logger.info('Starting compliance check loop', { intervalMs: COMPLIANCE_CHECK_INTERVAL })
+
+    // Run first check immediately (with progress bar)
+    runComplianceCheck(true).catch(err => {
+        logger.error('Initial compliance check failed', err)
+    })
+
+    // Set up interval for background checks
+    // Wrap in try-catch to prevent errors from killing the interval
+    complianceIntervalId = setInterval(async () => {
+        logger.info('Interval triggered - starting background compliance check')
+        try {
+            await runComplianceCheck(false)
+        } catch (err) {
+            logger.error('Background compliance check threw an error', err)
+        }
+    }, COMPLIANCE_CHECK_INTERVAL)
+
+    logger.info('Compliance loop started successfully', { intervalId: String(complianceIntervalId) })
+}
+
 // App lifecycle
 app.whenReady().then(() => {
+    // Initialize logger first so we can log everything
+    initLogger()
+    logger.info('App ready event fired')
+
     // Initialize store
     initStore()
+    logger.info('Store initialized')
 
     // Set app user model id for windows notifications
     electronApp.setAppUserModelId('com.serc.compliance-agent')
@@ -285,12 +341,12 @@ app.whenReady().then(() => {
     if (!is.dev && process.platform === 'win32') {
         const exePath = process.execPath
         // Use PowerShell to add registry entry for startup
-        const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, '\\\\')}\\" --hidden'"`
+        const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, '\\\\')}\\\" --hidden'"`
         exec(regCommand, (error) => {
             if (error) {
-                console.error('Failed to set auto-start registry:', error)
+                logger.error('Failed to set auto-start registry', error)
             } else {
-                console.log('Auto-start registry entry created')
+                logger.info('Auto-start registry entry created')
             }
         })
     }
@@ -301,21 +357,32 @@ app.whenReady().then(() => {
     })
 
     setupIpcHandlers()
+    logger.info('IPC handlers set up')
+
     createWindow()
+    logger.info('Main window created')
+
     createTray(mainWindow!)
+    logger.info('System tray created')
 
     // Start compliance loop if enrolled
-    if (get('isEnrolled', false)) {
-        runComplianceCheck(true) // First check shows progress bar
-        setInterval(() => runComplianceCheck(false), COMPLIANCE_CHECK_INTERVAL) // Background checks are silent
+    const isEnrolled = get('isEnrolled', false)
+    logger.info('Enrollment status checked', { isEnrolled })
+
+    if (isEnrolled) {
+        startComplianceLoop()
+    } else {
+        logger.info('Device not enrolled - compliance loop not started')
     }
 })
 
 app.on('before-quit', () => {
+    logger.info('App before-quit event - setting isQuitting=true')
     isQuitting = true
 })
 
 app.on('window-all-closed', () => {
+    logger.info('All windows closed')
     if (process.platform !== 'darwin') {
         app.quit()
     }
