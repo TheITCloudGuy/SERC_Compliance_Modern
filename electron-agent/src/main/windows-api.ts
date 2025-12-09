@@ -118,28 +118,33 @@ export async function getAntivirusStatus(): Promise<boolean> {
  */
 export async function getAzureAdStatus(): Promise<{ deviceId: string; joinType: string }> {
     try {
+        // Use simpler pattern matching to avoid regex escape issues through shell layers
         const result = await runPowerShell(`
-      $output = dsregcmd /status 2>&1
+      $lines = dsregcmd /status 2>&1
       $deviceId = ''
       $joinType = ''
       
-      if ($output -match 'AzureAdJoined\\s*:\\s*YES') {
-        $joinType = 'Azure AD Joined'
-      } elseif ($output -match 'WorkplaceJoined\\s*:\\s*YES') {
-        $joinType = 'Workplace Joined'
+      foreach ($line in $lines) {
+        $trimmed = $line.ToString().Trim()
+        if ($trimmed -like 'AzureAdJoined*:*YES') {
+          $joinType = 'Azure AD Joined'
+        }
+        if ($trimmed -like 'WorkplaceJoined*:*YES') {
+          $joinType = 'Workplace Joined'
+        }
+        if ($trimmed -like 'DeviceId*:*' -and $joinType -eq 'Azure AD Joined') {
+          $deviceId = ($trimmed -split ':')[1].Trim()
+        }
+        if ($trimmed -like 'WorkplaceDeviceId*:*') {
+          $deviceId = ($trimmed -split ':')[1].Trim()
+        }
       }
       
-      if ($output -match 'DeviceId\\s*:\\s*([a-f0-9-]+)') {
-        $deviceId = $matches[1]
-      } elseif ($output -match 'WorkplaceDeviceId\\s*:\\s*([a-f0-9-]+)') {
-        $deviceId = $matches[1]
-      }
-      
-      Write-Output "$deviceId|$joinType"
+      Write-Output ([string]::Join('|', @($deviceId, $joinType)))
     `)
 
-        const [deviceId, joinType] = result.split('|')
-        return { deviceId: deviceId || '', joinType: joinType || '' }
+        const parts = result.split('|')
+        return { deviceId: parts[0] || '', joinType: parts[1] || '' }
     } catch {
         return { deviceId: '', joinType: '' }
     }

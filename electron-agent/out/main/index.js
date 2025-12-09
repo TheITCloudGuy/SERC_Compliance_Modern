@@ -175,26 +175,30 @@ async function getAntivirusStatus() {
 async function getAzureAdStatus() {
   try {
     const result = await runPowerShell(`
-      $output = dsregcmd /status 2>&1
+      $lines = dsregcmd /status 2>&1
       $deviceId = ''
       $joinType = ''
       
-      if ($output -match 'AzureAdJoined\\s*:\\s*YES') {
-        $joinType = 'Azure AD Joined'
-      } elseif ($output -match 'WorkplaceJoined\\s*:\\s*YES') {
-        $joinType = 'Workplace Joined'
+      foreach ($line in $lines) {
+        $trimmed = $line.ToString().Trim()
+        if ($trimmed -like 'AzureAdJoined*:*YES') {
+          $joinType = 'Azure AD Joined'
+        }
+        if ($trimmed -like 'WorkplaceJoined*:*YES') {
+          $joinType = 'Workplace Joined'
+        }
+        if ($trimmed -like 'DeviceId*:*' -and $joinType -eq 'Azure AD Joined') {
+          $deviceId = ($trimmed -split ':')[1].Trim()
+        }
+        if ($trimmed -like 'WorkplaceDeviceId*:*') {
+          $deviceId = ($trimmed -split ':')[1].Trim()
+        }
       }
       
-      if ($output -match 'DeviceId\\s*:\\s*([a-f0-9-]+)') {
-        $deviceId = $matches[1]
-      } elseif ($output -match 'WorkplaceDeviceId\\s*:\\s*([a-f0-9-]+)') {
-        $deviceId = $matches[1]
-      }
-      
-      Write-Output "$deviceId|$joinType"
+      Write-Output ([string]::Join('|', @($deviceId, $joinType)))
     `);
-    const [deviceId, joinType] = result.split("|");
-    return { deviceId: deviceId || "", joinType: joinType || "" };
+    const parts = result.split("|");
+    return { deviceId: parts[0] || "", joinType: parts[1] || "" };
   } catch {
     return { deviceId: "", joinType: "" };
   }
@@ -436,13 +440,16 @@ function setupIpcHandlers() {
 electron.app.whenReady().then(() => {
   initStore();
   utils.electronApp.setAppUserModelId("com.serc.compliance-agent");
-  if (!utils.is.dev) {
-    electron.app.setLoginItemSettings({
-      openAtLogin: true,
-      openAsHidden: true,
-      // Start minimized to tray
-      args: ["--hidden"]
-      // Pass argument to indicate hidden start
+  if (!utils.is.dev && process.platform === "win32") {
+    const exePath = process.execPath;
+    const { exec } = require("child_process");
+    const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, "\\\\")}\\" --hidden'"`;
+    exec(regCommand, (error) => {
+      if (error) {
+        console.error("Failed to set auto-start registry:", error);
+      } else {
+        console.log("Auto-start registry entry created");
+      }
     });
   }
   electron.app.on("browser-window-created", (_, window) => {

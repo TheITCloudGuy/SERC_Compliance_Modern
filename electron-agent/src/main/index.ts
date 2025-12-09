@@ -276,11 +276,19 @@ app.whenReady().then(() => {
     electronApp.setAppUserModelId('com.serc.compliance-agent')
 
     // Enable auto-start at Windows logon (only in production)
-    if (!is.dev) {
-        app.setLoginItemSettings({
-            openAtLogin: true,
-            openAsHidden: true, // Start minimized to tray
-            args: ['--hidden'] // Pass argument to indicate hidden start
+    // Note: app.setLoginItemSettings with openAsHidden doesn't work reliably on Windows
+    // Instead, we write directly to the Windows registry
+    if (!is.dev && process.platform === 'win32') {
+        const exePath = process.execPath
+        // Use PowerShell to add registry entry for startup
+        const { exec } = require('child_process')
+        const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, '\\\\')}\\" --hidden'"`
+        exec(regCommand, (error: Error | null) => {
+            if (error) {
+                console.error('Failed to set auto-start registry:', error)
+            } else {
+                console.log('Auto-start registry entry created')
+            }
         })
     }
 
