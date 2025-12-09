@@ -41,6 +41,13 @@ export default function UserPortal() {
   useEffect(() => {
     if (session?.user?.email) {
       fetchData();
+
+      // Auto-refresh every 30 seconds
+      const refreshInterval = setInterval(() => {
+        fetchData();
+      }, 30000);
+
+      return () => clearInterval(refreshInterval);
     } else if (session === null) {
       // Session finished loading and no user found
       setLoading(false);

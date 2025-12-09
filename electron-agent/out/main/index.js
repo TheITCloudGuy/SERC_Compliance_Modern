@@ -1,8 +1,8 @@
 "use strict";
 const electron = require("electron");
 const path = require("path");
-const utils = require("@electron-toolkit/utils");
 const child_process = require("child_process");
+const utils = require("@electron-toolkit/utils");
 const util = require("util");
 const os = require("os");
 const fs = require("fs");
@@ -245,6 +245,7 @@ function save() {
     console.error("Failed to save store:", error);
   }
 }
+let isQuitting = false;
 let mainWindow = null;
 const DASHBOARD_URL = "https://serc-compliance-modern.vercel.app/api/telemetry";
 const ENROLL_URL = "https://serc-compliance-modern.vercel.app/api/enroll/poll";
@@ -284,7 +285,7 @@ function createWindow() {
     }
   });
   mainWindow.on("close", (event) => {
-    if (!electron.app.isQuitting) {
+    if (!isQuitting) {
       event.preventDefault();
       mainWindow?.hide();
     }
@@ -442,9 +443,8 @@ electron.app.whenReady().then(() => {
   utils.electronApp.setAppUserModelId("com.serc.compliance-agent");
   if (!utils.is.dev && process.platform === "win32") {
     const exePath = process.execPath;
-    const { exec } = require("child_process");
     const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, "\\\\")}\\" --hidden'"`;
-    exec(regCommand, (error) => {
+    child_process.exec(regCommand, (error) => {
       if (error) {
         console.error("Failed to set auto-start registry:", error);
       } else {
@@ -464,7 +464,7 @@ electron.app.whenReady().then(() => {
   }
 });
 electron.app.on("before-quit", () => {
-  electron.app.isQuitting = true;
+  isQuitting = true;
 });
 electron.app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

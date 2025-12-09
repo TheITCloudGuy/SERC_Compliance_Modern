@@ -343,7 +343,7 @@ function EnrollStep() {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "syncing" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(20);
 
   // Handle countdown and redirect when syncing
   useEffect(() => {
@@ -381,7 +381,7 @@ function EnrollStep() {
         // After showing success briefly, switch to syncing state
         setTimeout(() => {
           setStatus("syncing");
-          setCountdown(10);
+          setCountdown(20);
         }, 1500);
       } else {
         const data = await res.json();
@@ -410,7 +410,7 @@ function EnrollStep() {
         <div className="w-full bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-linear"
-            style={{ width: `${((10 - countdown) / 10) * 100}%` }}
+            style={{ width: `${((20 - countdown) / 20) * 100}%` }}
           ></div>
         </div>
 

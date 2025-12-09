@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Notification, nativeImage } from 'electron'
 import { join } from 'path'
+import { exec } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray, updateTrayIcon } from './tray'
 import {
@@ -14,6 +15,9 @@ import {
 } from './windows-api'
 import { initStore, get, set } from './store'
 import * as os from 'os'
+
+// Track if app is quitting (used to differentiate close vs minimize to tray)
+let isQuitting = false
 
 let mainWindow: BrowserWindow | null = null
 
@@ -69,7 +73,7 @@ function createWindow(): void {
 
     // Minimize to tray instead of closing
     mainWindow.on('close', (event) => {
-        if (!app.isQuitting) {
+        if (!isQuitting) {
             event.preventDefault()
             mainWindow?.hide()
         }
@@ -281,9 +285,8 @@ app.whenReady().then(() => {
     if (!is.dev && process.platform === 'win32') {
         const exePath = process.execPath
         // Use PowerShell to add registry entry for startup
-        const { exec } = require('child_process')
         const regCommand = `powershell -NoProfile -NonInteractive -Command "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SERC Compliance Agent' -Value '\\"${exePath.replace(/\\/g, '\\\\')}\\" --hidden'"`
-        exec(regCommand, (error: Error | null) => {
+        exec(regCommand, (error) => {
             if (error) {
                 console.error('Failed to set auto-start registry:', error)
             } else {
@@ -309,7 +312,7 @@ app.whenReady().then(() => {
 })
 
 app.on('before-quit', () => {
-    app.isQuitting = true
+    isQuitting = true
 })
 
 app.on('window-all-closed', () => {
@@ -323,10 +326,3 @@ app.on('activate', () => {
         createWindow()
     }
 })
-
-// Extend app type
-declare module 'electron' {
-    interface App {
-        isQuitting: boolean
-    }
-}
