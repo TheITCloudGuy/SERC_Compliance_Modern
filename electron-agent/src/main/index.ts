@@ -110,19 +110,26 @@ async function loadRenderer(window: BrowserWindow): Promise<void> {
         try {
             logger.info('Attempting to load remote UI from', { url: REMOTE_UI_URL })
 
+            // Clear cache before loading remote UI to ensure fresh content
+            await window.webContents.session.clearCache()
+            logger.info('Session cache cleared')
+
             // Check if remote URL is reachable
             const controller = new AbortController()
             const timeout = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
             const response = await fetch(REMOTE_UI_URL, {
                 method: 'HEAD',
-                signal: controller.signal
+                signal: controller.signal,
+                cache: 'no-store' // Don't cache the check
             })
             clearTimeout(timeout)
 
             if (response.ok) {
                 logger.info('Remote UI is reachable, loading...')
-                window.loadURL(REMOTE_UI_URL)
+                // Add cache-busting query parameter to force reload
+                const cacheBuster = `?_t=${Date.now()}`
+                window.loadURL(REMOTE_UI_URL + cacheBuster)
                 return
             }
         } catch (error) {
@@ -347,6 +354,14 @@ function setupIpcHandlers(): void {
 
     ipcMain.on('install-update', () => {
         installUpdateNow()
+    })
+
+    // Reload UI handler - clears cache and reloads the remote UI
+    ipcMain.handle('reload-ui', async () => {
+        if (mainWindow) {
+            logger.info('Reloading UI on request')
+            await loadRenderer(mainWindow)
+        }
     })
 }
 

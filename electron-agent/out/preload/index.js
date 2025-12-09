@@ -33,5 +33,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   installUpdate: () => electron.ipcRenderer.send("install-update"),
   onUpdateStatus: (callback) => {
     electron.ipcRenderer.on("update-status", (_, data) => callback(data));
-  }
+  },
+  // UI reload (clears cache and reloads remote UI)
+  reloadUI: () => electron.ipcRenderer.invoke("reload-ui")
 });

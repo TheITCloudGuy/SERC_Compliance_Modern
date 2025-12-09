@@ -40,7 +40,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     installUpdate: () => ipcRenderer.send('install-update'),
     onUpdateStatus: (callback: (data: UpdateStatus) => void) => {
         ipcRenderer.on('update-status', (_, data) => callback(data))
-    }
+    },
+
+    // UI reload (clears cache and reloads remote UI)
+    reloadUI: () => ipcRenderer.invoke('reload-ui')
 })
 
 // Type definitions

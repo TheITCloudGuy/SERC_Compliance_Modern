@@ -121,6 +121,18 @@ function createTray(window) {
         mainWindow$1?.focus();
       }
     },
+    {
+      label: "Refresh UI",
+      click: async () => {
+        logger.info("Tray: Refresh UI clicked");
+        if (mainWindow$1) {
+          await mainWindow$1.webContents.session.clearCache();
+          mainWindow$1.reload();
+          mainWindow$1.show();
+          mainWindow$1.focus();
+        }
+      }
+    },
     { type: "separator" },
     {
       label: "Exit",
@@ -500,16 +512,21 @@ async function loadRenderer(window) {
   if (!utils.is.dev) {
     try {
       logger.info("Attempting to load remote UI from", { url: REMOTE_UI_URL });
+      await window.webContents.session.clearCache();
+      logger.info("Session cache cleared");
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5e3);
       const response = await fetch(REMOTE_UI_URL, {
         method: "HEAD",
-        signal: controller.signal
+        signal: controller.signal,
+        cache: "no-store"
+        // Don't cache the check
       });
       clearTimeout(timeout);
       if (response.ok) {
         logger.info("Remote UI is reachable, loading...");
-        window.loadURL(REMOTE_UI_URL);
+        const cacheBuster = `?_t=${Date.now()}`;
+        window.loadURL(REMOTE_UI_URL + cacheBuster);
         return;
       }
     } catch (error) {
@@ -683,6 +700,12 @@ function setupIpcHandlers() {
   });
   electron.ipcMain.on("install-update", () => {
     installUpdateNow();
+  });
+  electron.ipcMain.handle("reload-ui", async () => {
+    if (mainWindow) {
+      logger.info("Reloading UI on request");
+      await loadRenderer(mainWindow);
+    }
   });
 }
 function startComplianceLoop() {

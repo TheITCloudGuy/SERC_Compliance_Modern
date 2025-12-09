@@ -36,6 +36,19 @@ export function createTray(window: BrowserWindow): Tray {
                 mainWindow?.focus()
             }
         },
+        {
+            label: 'Refresh UI',
+            click: async () => {
+                logger.info('Tray: Refresh UI clicked')
+                if (mainWindow) {
+                    // Clear cache and reload to get latest UI
+                    await mainWindow.webContents.session.clearCache()
+                    mainWindow.reload()
+                    mainWindow.show()
+                    mainWindow.focus()
+                }
+            }
+        },
         { type: 'separator' },
         {
             label: 'Exit',
