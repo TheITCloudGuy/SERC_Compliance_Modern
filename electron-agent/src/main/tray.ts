@@ -2,6 +2,7 @@ import { Tray, Menu, app, nativeImage, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { logger } from './logger'
+import { checkForUpdates } from './auto-updater'
 
 let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
@@ -47,6 +48,13 @@ export function createTray(window: BrowserWindow): Tray {
                     mainWindow.show()
                     mainWindow.focus()
                 }
+            }
+        },
+        {
+            label: 'Check for Updates',
+            click: () => {
+                logger.info('Tray: Check for Updates clicked')
+                checkForUpdates()
             }
         },
         { type: 'separator' },

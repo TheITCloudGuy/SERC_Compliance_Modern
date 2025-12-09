@@ -638,6 +638,9 @@ video {
 .gap-2 {
   gap: 0.5rem;
 }
+.gap-3 {
+  gap: 0.75rem;
+}
 .space-y-2 > :not([hidden]) ~ :not([hidden]) {
   --tw-space-y-reverse: 0;
   margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
@@ -1238,32 +1241,32 @@ body {
     0%,
     100% {
         transform: scale(1);
-        opacity: 0.8;
-        box-shadow: 0 0 20px 8px var(--glow-blue), 0 0 40px 16px rgba(59, 130, 246, 0.2);
+        opacity: 0.7;
+        box-shadow: 0 0 8px 2px var(--glow-blue);
     }
 
     50% {
-        transform: scale(1.1);
+        transform: scale(1.05);
         opacity: 1;
-        box-shadow: 0 0 30px 12px var(--glow-blue), 0 0 60px 24px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 0 12px 4px var(--glow-blue);
     }
 }
 
 .glow-circle-container {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .glow-circle {
-    width: 16px;
-    height: 16px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-blue) 0%, #60a5fa 100%);
-    box-shadow: 0 0 20px 8px var(--glow-blue), 0 0 40px 16px rgba(59, 130, 246, 0.2);
+    background: var(--accent-blue);
+    box-shadow: 0 0 8px 2px var(--glow-blue);
     animation: glowPulse 2s ease-in-out infinite;
 }
 
