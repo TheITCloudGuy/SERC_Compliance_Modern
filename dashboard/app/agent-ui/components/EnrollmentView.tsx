@@ -87,11 +87,12 @@ export default function EnrollmentView({ onEnrollmentComplete }: EnrollmentViewP
                     </p>
                 </div>
 
-                {/* Polling indicator */}
+                {/* Polling indicator - glowing blue circle */}
                 {isPolling && (
-                    <div className="mt-6 flex items-center justify-center gap-2">
-                        <div className="pulse-dot blue" />
-                        <span className="text-white/40 text-xs">Listening for enrolment...</span>
+                    <div className="mt-6 flex items-center justify-center">
+                        <div className="glow-circle-container">
+                            <div className="glow-circle" />
+                        </div>
                     </div>
                 )}
             </div>

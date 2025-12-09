@@ -1,2 +1,5 @@
 /electron-agent/dist
 electron-agent/node_modules/electron/dist/electron.exe
+
+# User-specific enrollment data - should never be in the package
+**/enrollment.json

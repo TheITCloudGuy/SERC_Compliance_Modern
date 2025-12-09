@@ -187,14 +187,64 @@ async function runPowerShell(command) {
     return "";
   }
 }
+const INVALID_SERIALS = [
+  "default string",
+  "to be filled by o.e.m.",
+  "to be filled by o.e.m",
+  "system serial number",
+  "not specified",
+  "none",
+  "n/a",
+  "na",
+  "0",
+  "123456789",
+  "xxxxxxxxxx",
+  "default",
+  "oem",
+  "chassis serial number",
+  ""
+];
+function isValidSerial(serial) {
+  if (!serial) return false;
+  const normalized = serial.toLowerCase().trim();
+  return !INVALID_SERIALS.includes(normalized) && normalized.length > 3;
+}
 async function getSerialNumber() {
   try {
-    const result = await runPowerShell(
+    const biosSerial = await runPowerShell(
       "(Get-WmiObject Win32_BIOS).SerialNumber"
     );
-    return result || "Unknown";
-  } catch {
-    return "Unknown";
+    if (isValidSerial(biosSerial)) {
+      return biosSerial.trim();
+    }
+    console.log(`Invalid BIOS serial detected: "${biosSerial}", trying fallbacks...`);
+    const motherboardUuid = await runPowerShell(
+      "(Get-WmiObject Win32_ComputerSystemProduct).UUID"
+    );
+    if (motherboardUuid && motherboardUuid !== "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF" && motherboardUuid.length > 10) {
+      console.log(`Using motherboard UUID as device ID: ${motherboardUuid}`);
+      return `MB-${motherboardUuid.trim()}`;
+    }
+    const macAddress = await runPowerShell(
+      `(Get-WmiObject Win32_NetworkAdapter | Where-Object { $_.PhysicalAdapter -eq $true -and $_.MACAddress } | Select-Object -First 1).MACAddress -replace ':',''`
+    );
+    if (macAddress && macAddress.length >= 12) {
+      console.log(`Using MAC address as device ID: ${macAddress}`);
+      return `MAC-${macAddress.trim()}`;
+    }
+    const machineGuid = await runPowerShell(
+      `(Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' -Name 'MachineGuid').MachineGuid`
+    );
+    if (machineGuid && machineGuid.length > 10) {
+      console.log(`Using Windows MachineGuid as device ID: ${machineGuid}`);
+      return `WIN-${machineGuid.trim()}`;
+    }
+    const hostname = os__namespace.hostname();
+    console.warn(`Could not find unique hardware ID, using hostname: ${hostname}`);
+    return `HOST-${hostname}`;
+  } catch (error) {
+    console.error("Error getting serial number:", error);
+    return `HOST-${os__namespace.hostname()}`;
   }
 }
 function getOsVersion() {

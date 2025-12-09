@@ -1231,16 +1231,55 @@ body {
     background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
     box-shadow: 0 0 10px var(--glow-blue);
 }
+
+/* ===== GLOWING CIRCLE (Enrollment Polling) ===== */
+@keyframes glowPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+        box-shadow: 0 0 20px 8px var(--glow-blue), 0 0 40px 16px rgba(59, 130, 246, 0.2);
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+        box-shadow: 0 0 30px 12px var(--glow-blue), 0 0 60px 24px rgba(59, 130, 246, 0.3);
+    }
+}
+
+.glow-circle-container {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.glow-circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue) 0%, #60a5fa 100%);
+    box-shadow: 0 0 20px 8px var(--glow-blue), 0 0 40px 16px rgba(59, 130, 246, 0.2);
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
 .hover\:bg-red-500\/20:hover {
   background-color: rgb(239 68 68 / 0.2);
 }
+
 .hover\:bg-white\/10:hover {
   background-color: rgb(255 255 255 / 0.1);
 }
+
 .group:hover .group-hover\:text-red-400 {
   --tw-text-opacity: 1;
   color: rgb(248 113 113 / var(--tw-text-opacity, 1));
 }
+
 .group:hover .group-hover\:text-white\/80 {
   color: rgb(255 255 255 / 0.8);
 }

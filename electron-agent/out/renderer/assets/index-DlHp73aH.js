@@ -7111,10 +7111,7 @@ function EnrollmentView({ onEnrollmentComplete }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-white/60 text-sm", children: "Visit the enrolment portal and enter the code above." }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-white/40 text-xs", children: "The device will be linked to your account automatically." })
         ] }),
-        isPolling && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-6 flex items-center justify-center gap-2", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "pulse-dot blue" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-white/40 text-xs", children: "Listening for enrolment..." })
-        ] })
+        isPolling && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-6 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "glow-circle-container", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "glow-circle" }) }) })
       ] })
     }
   );
