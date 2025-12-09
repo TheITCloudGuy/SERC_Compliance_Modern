@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - 'dashboard/**'
+      - '.github/workflows/main_serc-compliance-dashboard.yml'
   workflow_dispatch:
 
 jobs:
@@ -16,10 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-
-    defaults:
-      run:
-        working-directory: ./dashboard
 
     steps:
       - uses: actions/checkout@v4
@@ -30,18 +27,22 @@ jobs:
           node-version: '22.x'
 
       - name: npm install and build
+        working-directory: ./dashboard
         run: |
           npm ci
           npm run build
+
+      - name: Prepare standalone package
+        working-directory: ./dashboard
+        run: |
+          cp -r .next/static .next/standalone/.next/
+          cp -r public .next/standalone/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: |
-            dashboard/.next/standalone
-            dashboard/.next/static
-            dashboard/public
+          path: dashboard/.next/standalone
 
   deploy:
     runs-on: ubuntu-latest
@@ -53,16 +54,11 @@ jobs:
         with:
           name: node-app
 
-      - name: Prepare deployment package
-        run: |
-          cp -r dashboard/.next/static dashboard/.next/standalone/.next/
-          cp -r dashboard/public dashboard/.next/standalone/
-
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'serc-compliance-dashboard'
           slot-name: 'Production'
-          package: dashboard/.next/standalone
+          package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FCA681E0424B48F9850F14FC31BE4961 }}
