@@ -1,0 +1,73 @@
+{
+    "name": "serc-compliance-agent",
+    "version": "1.0.0",
+    "description": "SERC Compliance Agent - Modern Electron-based device health monitor",
+    "main": "./out/main/index.js",
+    "author": "SERC",
+    "scripts": {
+        "dev": "electron-vite dev",
+        "build": "electron-vite build",
+        "build:win": "electron-vite build && electron-builder --win",
+        "preview": "electron-vite preview",
+        "start": "electron-vite preview",
+        "postinstall": "electron-builder install-app-deps"
+    },
+    "dependencies": {
+        "@electron/remote": "^2.1.2",
+        "@electron-toolkit/utils": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "@types/react": "^18.2.45",
+        "@types/react-dom": "^18.2.18",
+        "@vitejs/plugin-react": "^4.2.1",
+        "autoprefixer": "^10.4.16",
+        "electron": "^31.0.0",
+        "electron-builder": "^24.9.1",
+        "electron-vite": "^2.3.0",
+        "postcss": "^8.4.32",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "tailwindcss": "^3.4.0",
+        "typescript": "^5.3.3",
+        "vite": "^5.0.10"
+    },
+    "build": {
+        "appId": "com.serc.compliance-agent",
+        "productName": "SERC Compliance Agent",
+        "asar": true,
+        "directories": {
+            "output": "dist"
+        },
+        "extraResources": [
+            {
+                "from": "resources",
+                "to": "resources",
+                "filter": [
+                    "**/*"
+                ]
+            }
+        ],
+        "win": {
+            "target": [
+                {
+                    "target": "nsis",
+                    "arch": [
+                        "x64"
+                    ]
+                }
+            ],
+            "requestedExecutionLevel": "requireAdministrator",
+            "icon": "resources/icon.ico"
+        },
+        "nsis": {
+            "oneClick": true,
+            "perMachine": true,
+            "allowToChangeInstallationDirectory": false,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "SERC Compliance Agent",
+            "runAfterFinish": true
+        }
+    }
+}
