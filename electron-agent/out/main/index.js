@@ -324,8 +324,8 @@ function save() {
 }
 let isQuitting = false;
 let mainWindow = null;
-const DASHBOARD_URL = "https://serc-compliance-modern.vercel.app/api/telemetry";
-const ENROLL_URL = "https://serc-compliance-modern.vercel.app/api/enroll/poll";
+const DASHBOARD_URL = "https://compliance.serc.ac.uk/api/telemetry";
+const ENROLL_URL = "https://compliance.serc.ac.uk/api/enroll/poll";
 const COMPLIANCE_CHECK_INTERVAL = 5 * 60 * 1e3;
 let complianceIntervalId = null;
 function createWindow() {
