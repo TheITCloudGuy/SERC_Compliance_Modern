@@ -1,6 +1,8 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
+import * as fs from 'fs'
+import * as path from 'path'
 
 const execAsync = promisify(exec)
 
@@ -186,41 +188,82 @@ export async function getAntivirusStatus(): Promise<boolean> {
 }
 
 /**
- * Get Azure AD join status using dsregcmd
+ * Get Azure AD join status using dsregcmd with file-based caching.
+ * This approach avoids all PowerShell escaping issues by using a script file.
  */
 export async function getAzureAdStatus(): Promise<{ deviceId: string; joinType: string }> {
     try {
-        // Use simpler pattern matching to avoid regex escape issues through shell layers
-        const result = await runPowerShell(`
-      $lines = dsregcmd /status 2>&1
-      $deviceId = ''
-      $joinType = ''
-      
-      foreach ($line in $lines) {
-        $trimmed = $line.ToString().Trim()
-        if ($trimmed -like 'AzureAdJoined*:*YES') {
-          $joinType = 'Azure AD Joined'
-        }
-        if ($trimmed -like 'WorkplaceJoined*:*YES') {
-          $joinType = 'Workplace Joined'
-        }
-        if ($trimmed -like 'DeviceId*:*' -and $joinType -eq 'Azure AD Joined') {
-          $deviceId = ($trimmed -split ':')[1].Trim()
-        }
-        if ($trimmed -like 'WorkplaceDeviceId*:*') {
-          $deviceId = ($trimmed -split ':')[1].Trim()
-        }
-      }
-      
-      Write-Output ([string]::Join('|', @($deviceId, $joinType)))
-    `)
+        // Use AppData/Roaming/serc-compliance-agent for cache
+        const cacheDir = path.join(os.homedir(), 'AppData', 'Roaming', 'serc-compliance-agent')
+        const cacheFile = path.join(cacheDir, 'azure-ad-status.json')
+        const scriptFile = path.join(cacheDir, 'get-aad-status.ps1')
 
-        const parts = result.split('|')
-        return { deviceId: parts[0] || '', joinType: parts[1] || '' }
-    } catch {
+        // Ensure cache directory exists
+        if (!fs.existsSync(cacheDir)) {
+            fs.mkdirSync(cacheDir, { recursive: true })
+        }
+
+        // Create the PowerShell script that will write to the cache file
+        const psScript = `
+$output = dsregcmd /status 2>&1 | Out-String
+$deviceId = ''
+$joinType = ''
+
+if ($output -like '*AzureAdJoined : YES*') {
+    $joinType = 'Azure AD Joined'
+    # Extract DeviceId for Azure AD Joined
+    $lines = $output -split [Environment]::NewLine
+    foreach ($line in $lines) {
+        if ($line.Trim().StartsWith('DeviceId :')) {
+            $deviceId = $line.Trim().Substring(10).Trim()
+            break
+        }
+    }
+} elseif ($output -like '*WorkplaceJoined : YES*') {
+    $joinType = 'Workplace Joined'
+    # Extract WorkplaceDeviceId
+    $lines = $output -split [Environment]::NewLine
+    foreach ($line in $lines) {
+        if ($line.Trim().StartsWith('WorkplaceDeviceId :')) {
+            $deviceId = $line.Trim().Substring(19).Trim()
+            break
+        }
+    }
+}
+
+@{ deviceId = $deviceId; joinType = $joinType } | ConvertTo-Json | Set-Content -Path '${cacheFile.replace(/\\/g, '\\\\')}' -NoNewline
+`
+
+        // Write the script file
+        fs.writeFileSync(scriptFile, psScript, 'utf-8')
+
+        // Execute the script
+        await execAsync(
+            `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptFile}"`,
+            { timeout: 15000 }
+        )
+
+        // Read the cached result
+        if (fs.existsSync(cacheFile)) {
+            let content = fs.readFileSync(cacheFile, 'utf-8')
+            // Strip BOM if present (PowerShell sometimes adds it)
+            if (content.charCodeAt(0) === 0xFEFF) {
+                content = content.slice(1)
+            }
+            const data = JSON.parse(content)
+            return {
+                deviceId: data.deviceId || '',
+                joinType: data.joinType || ''
+            }
+        }
+
+        return { deviceId: '', joinType: '' }
+    } catch (error) {
+        console.error('Azure AD status error:', error)
         return { deviceId: '', joinType: '' }
     }
 }
+
 
 /**
  * Get work account email from registry

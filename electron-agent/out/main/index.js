@@ -23,6 +23,8 @@ function _interopNamespaceDefault(e) {
   n.default = e;
   return Object.freeze(n);
 }
+const path__namespace = /* @__PURE__ */ _interopNamespaceDefault(path);
+const fs__namespace = /* @__PURE__ */ _interopNamespaceDefault(fs);
 const os__namespace = /* @__PURE__ */ _interopNamespaceDefault(os);
 const MAX_LOG_SIZE = 5 * 1024 * 1024;
 const MAX_LOG_FILES = 3;
@@ -389,32 +391,60 @@ async function getAntivirusStatus() {
 }
 async function getAzureAdStatus() {
   try {
-    const result = await runPowerShell(`
-      $lines = dsregcmd /status 2>&1
-      $deviceId = ''
-      $joinType = ''
-      
-      foreach ($line in $lines) {
-        $trimmed = $line.ToString().Trim()
-        if ($trimmed -like 'AzureAdJoined*:*YES') {
-          $joinType = 'Azure AD Joined'
+    const cacheDir = path__namespace.join(os__namespace.homedir(), "AppData", "Roaming", "serc-compliance-agent");
+    const cacheFile = path__namespace.join(cacheDir, "azure-ad-status.json");
+    const scriptFile = path__namespace.join(cacheDir, "get-aad-status.ps1");
+    if (!fs__namespace.existsSync(cacheDir)) {
+      fs__namespace.mkdirSync(cacheDir, { recursive: true });
+    }
+    const psScript = `
+$output = dsregcmd /status 2>&1 | Out-String
+$deviceId = ''
+$joinType = ''
+
+if ($output -like '*AzureAdJoined : YES*') {
+    $joinType = 'Azure AD Joined'
+    # Extract DeviceId for Azure AD Joined
+    $lines = $output -split [Environment]::NewLine
+    foreach ($line in $lines) {
+        if ($line.Trim().StartsWith('DeviceId :')) {
+            $deviceId = $line.Trim().Substring(10).Trim()
+            break
         }
-        if ($trimmed -like 'WorkplaceJoined*:*YES') {
-          $joinType = 'Workplace Joined'
+    }
+} elseif ($output -like '*WorkplaceJoined : YES*') {
+    $joinType = 'Workplace Joined'
+    # Extract WorkplaceDeviceId
+    $lines = $output -split [Environment]::NewLine
+    foreach ($line in $lines) {
+        if ($line.Trim().StartsWith('WorkplaceDeviceId :')) {
+            $deviceId = $line.Trim().Substring(19).Trim()
+            break
         }
-        if ($trimmed -like 'DeviceId*:*' -and $joinType -eq 'Azure AD Joined') {
-          $deviceId = ($trimmed -split ':')[1].Trim()
-        }
-        if ($trimmed -like 'WorkplaceDeviceId*:*') {
-          $deviceId = ($trimmed -split ':')[1].Trim()
-        }
+    }
+}
+
+@{ deviceId = $deviceId; joinType = $joinType } | ConvertTo-Json | Set-Content -Path '${cacheFile.replace(/\\/g, "\\\\")}' -NoNewline
+`;
+    fs__namespace.writeFileSync(scriptFile, psScript, "utf-8");
+    await execAsync(
+      `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptFile}"`,
+      { timeout: 15e3 }
+    );
+    if (fs__namespace.existsSync(cacheFile)) {
+      let content = fs__namespace.readFileSync(cacheFile, "utf-8");
+      if (content.charCodeAt(0) === 65279) {
+        content = content.slice(1);
       }
-      
-      Write-Output ([string]::Join('|', @($deviceId, $joinType)))
-    `);
-    const parts = result.split("|");
-    return { deviceId: parts[0] || "", joinType: parts[1] || "" };
-  } catch {
+      const data2 = JSON.parse(content);
+      return {
+        deviceId: data2.deviceId || "",
+        joinType: data2.joinType || ""
+      };
+    }
+    return { deviceId: "", joinType: "" };
+  } catch (error) {
+    console.error("Azure AD status error:", error);
     return { deviceId: "", joinType: "" };
   }
 }
